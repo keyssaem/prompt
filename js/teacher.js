@@ -11,6 +11,7 @@ const $ = s => document.querySelector(s);
 const T = $('#t-app');
 const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+const QR_URL = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 헷갈리는 0 O 1 I 제외
 const ONLINE_MS = 75 * 1000;   // 마지막 신호가 75초 안이면 접속 중
 const IDLE_MS = 2 * 60 * 1000; // 2분 동안 입력이 없으면 막힘
@@ -157,9 +158,12 @@ function renderShell() {
       <h1 class="dash-title">${esc(cls.name)}</h1>
     </div>
     <div class="join-box">
-      <span class="muted tiny">학생 참여 코드</span>
-      <span class="code code-big">${cls.code}</span>
-      <label class="tiny"><input type="checkbox" id="openToggle" ${cls.open === false ? '' : 'checked'}> 참여 허용</label>
+      <button class="qr-thumb" id="qrOpen" type="button" aria-label="참여 QR 코드 크게 보기" title="눌러서 크게 보기"><span id="qrSmall" class="qr-svg">QR</span></button>
+      <div class="join-info">
+        <span class="muted tiny">학생 참여 코드</span>
+        <span class="code code-big">${cls.code}</span>
+        <label class="tiny"><input type="checkbox" id="openToggle" ${cls.open === false ? '' : 'checked'}> 참여 허용</label>
+      </div>
     </div>
   </div>
 
@@ -192,7 +196,18 @@ function renderShell() {
     <div id="missed"></div>
   </section>
 
-  <dialog id="detailDialog" class="detail-dialog"><div id="detailBody"></div></dialog>`;
+  <dialog id="detailDialog" class="detail-dialog"><div id="detailBody"></div></dialog>
+
+  <dialog id="qrDialog" class="qr-dialog" aria-label="학생 참여 QR 코드">
+    <div class="qr-big qr-svg" id="qrBig"></div>
+    <div class="qr-side">
+      <h2>카메라로 찍고 들어오세요</h2>
+      <p class="muted">태블릿·휴대폰 카메라로 QR을 찍으면<br>학급 코드가 들어간 채로 열려요.</p>
+      <span class="code code-huge">${cls.code}</span>
+      <p class="qr-url" id="qrUrl"></p>
+      <div class="t-row"><button class="outline compact" id="copyLink" type="button">주소 복사</button><button class="primary" id="closeQr" type="button">닫기</button></div>
+    </div>
+  </dialog>`;
 
   $('#openToggle').onchange = e => db.collection('classes').doc(cls.code).update({ open: e.target.checked })
     .then(() => toast(e.target.checked ? '참여를 열었어요.' : '참여를 닫았어요.')).catch(() => toast('바꾸지 못했어요.'));
@@ -206,8 +221,34 @@ function renderShell() {
   const dlg = $('#detailDialog');
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
   dlg.addEventListener('close', () => { detailSid = null; });
+  const qd = $('#qrDialog');
+  $('#qrOpen').onclick = () => qd.showModal();
+  $('#closeQr').onclick = () => qd.close();
+  qd.addEventListener('click', e => { if (e.target === qd) qd.close(); });
+  $('#qrUrl').textContent = joinUrl(cls.code);
+  $('#copyLink').onclick = () => navigator.clipboard.writeText(joinUrl(cls.code))
+    .then(() => toast('참여 주소를 복사했어요.')).catch(() => toast('복사하지 못했어요. 주소를 직접 선택해 주세요.'));
+  drawQr();
   refresh(new Set());
   drawInsights();
+}
+
+/* 학생 참여 주소: 학생 화면(index.html) + ?code=학급코드 → QR로 찍으면 코드가 자동으로 들어가요 */
+function joinUrl(code) {
+  const u = new URL('./', location.href);
+  u.search = ''; u.hash = '';
+  u.searchParams.set('code', code);
+  return u.href;
+}
+async function drawQr() {
+  try { if (!window.qrcode) await loadScript(QR_URL); }
+  catch { return; } // QR 도구를 못 불러오면 코드만 보여 줘요
+  const q = qrcode(0, 'M');
+  q.addData(joinUrl(cls.code));
+  q.make();
+  const svg = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true, alt: '학생 참여 QR 코드' });
+  $('#qrSmall').innerHTML = svg;
+  $('#qrBig').innerHTML = svg;
 }
 
 function setCols(n) {

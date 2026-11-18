@@ -6,6 +6,8 @@ const LEVELS = window.LEVELS;
 const MISSIONS = window.MISSIONS;
 const byId = new Map(MISSIONS.map(m => [m.id, m]));
 const STATE_PREFIX = 'swysKoStateV1:';
+// 교사 화면 QR 주소(…/?code=AB12CD)로 들어오면 학급 코드를 미리 채워요
+const URL_CODE = (new URLSearchParams(location.search).get('code') || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
 
 let state = blankState();
 let view = 'join';
@@ -103,7 +105,7 @@ function renderJoin() {
     <h1>자세히 보고,<br><em>내 말로 그려 봐.</em></h1>
     <p class="muted">${cloud ? '선생님이 알려 준 학급 코드와 내 번호, 별명을 입력하세요.' : '번호와 별명을 입력하면 시작할 수 있어요. 기록은 이 기기에만 저장돼요.'}</p>
     <form id="joinForm" class="join-form" autocomplete="off">
-      ${cloud ? `<label>학급 코드<input id="classCode" name="classCode" required maxlength="8" placeholder="예: AB12CD" inputmode="latin" autocapitalize="characters"></label>` : ''}
+      ${cloud ? `<label>학급 코드<input id="classCode" name="classCode" required maxlength="8" placeholder="예: AB12CD" inputmode="latin" autocapitalize="characters" value="${esc(URL_CODE)}"></label>` : ''}
       <label>번호<select id="number" required><option value="">선택</option>${nums}</select></label>
       <label>별명<input id="nickname" required maxlength="10" placeholder="10글자 이하"></label>
       <p class="form-error" id="joinError" role="alert"></p>
@@ -111,6 +113,7 @@ function renderJoin() {
     </form>
     <p class="tiny muted">실명 대신 별명을 써도 괜찮아요.</p>
   </section>`;
+  if (cloud && URL_CODE) $('#number').focus(); // QR로 들어오면 코드는 채워져 있으니 번호부터
   $('#joinForm').onsubmit = async e => {
     e.preventDefault();
     const number = Number($('#number').value);
@@ -422,6 +425,8 @@ Store.on('net', () => updateHeader());
 (async () => {
   APP.innerHTML = '<p class="loading">불러오는 중…</p>';
   const { warning } = await Store.init();
+  // 함께 쓰는 태블릿: 다른 학급 QR로 들어오면 이전 참여 정보를 비우고 참여 화면을 보여 줘요
+  if (URL_CODE && Store.mode === 'cloud' && Store.profile && Store.profile.classCode !== URL_CODE) Store.leave();
   if (Store.profile) { load(); view = 'lobby'; }
   render();
   if (warning) toast(warning);

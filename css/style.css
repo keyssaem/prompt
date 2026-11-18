@@ -162,8 +162,28 @@ dialog::backdrop { background: rgba(20, 24, 32, .55); }
 .empty { text-align: center; color: var(--muted); padding: 30px 0; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 999px; max-width: calc(100vw - 32px); z-index: 50; box-shadow: var(--shadow); }
 
+/* 넓은 화면·가로 태블릿: 글을 쓰는 동안에도 그림이 보이도록 그림 칸을 고정 */
+@media (min-width: 701px) {
+  .workspace > .panel:first-child { position: sticky; top: 70px; }
+}
+/* 세로 태블릿(768px 안팎): 그림과 글쓰기를 나란히 두되 칸을 좁게 */
+@media (max-width: 1000px) {
+  .workspace { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .panel { padding: 14px; }
+  .editor h1 { font-size: 1.3rem; }
+  textarea { min-height: 130px; font-size: 1.05rem; }
+  .progress b { font-size: .8rem; }
+}
 @media (max-width: 860px) {
-  .workspace, .definition, .result-grid { grid-template-columns: 1fr; }
+  .definition, .result-grid { grid-template-columns: 1fr; }
+  .level-card .card-head { padding: 14px 16px; }
+  .card-body { padding: 14px 16px 16px; }
+}
+/* 휴대폰: 한 줄로 */
+@media (max-width: 700px) {
+  .workspace { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
   .level-grid, .how { grid-template-columns: 1fr; }
   .progress { grid-template-columns: repeat(2, 1fr); }
 }
