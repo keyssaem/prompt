@@ -127,6 +127,7 @@ function renderJoin() {
       load();
       view = 'lobby';
       render();
+      applySettings(Store.settings);
       Store.status(liveStatus());
     } catch (ex) {
       const msg = { BAD_CODE: '학급 코드를 다시 확인해 주세요. (영문·숫자 4~8자리)', NO_CLASS: '그런 학급 코드가 없어요. 선생님께 다시 확인해 주세요.', CLOSED: '지금은 이 학급에 참여할 수 없어요.', NETWORK: '인터넷 연결을 확인해 주세요.' }[ex.message];
@@ -148,6 +149,7 @@ function howTo() {
 
 function renderLobby() {
   const s = state.session;
+  const allowed = Store.settings.allowed;
   APP.innerHTML = `
   <section class="hero">
     <span class="eyebrow">한국어로 배우는 이미지 프롬프트</span>
@@ -158,16 +160,17 @@ function renderLobby() {
     <div><h2>프롬프트가 뭐예요?</h2><p>AI에게 무엇을 해 달라고 알려 주는 말이에요. 그림을 부탁할 때는 <b>대상 · 색 · 개수 · 위치 · 배경</b>을 담으면 좋아요.</p></div>
     <div class="prompt-example"><small>이렇게 바꿔 볼까요?</small><p class="before">“강아지 그려 줘.”</p><p class="after"><b>→</b> “초록 잔디 위에 앉아 있는 갈색 강아지 한 마리를 그려 줘.”</p></div>
   </section>
-  ${s ? `<aside class="resume"><span>${esc(LEVELS[s.difficulty].name)} · ${s.finishedAt ? '지난 도전을 모두 마쳤어요.' : (s.current + 1) + '단계를 하고 있었어요.'}</span><button class="outline compact" id="resume">${s.finishedAt ? '결과 다시 보기' : '이어서 하기'} →</button></aside>` : ''}
+  ${s ? `<aside class="resume"><span>${esc(LEVELS[s.difficulty].name)} · ${s.finishedAt ? '지난 도전을 모두 마쳤어요.' : (s.current + 1) + '단계를 하고 있었어요.'}</span><button class="outline compact" id="resume" ${!s.finishedAt && !allowed[s.difficulty] ? 'disabled title="선생님이 잠갔어요"' : ''}>${s.finishedAt ? '결과 다시 보기' : '이어서 하기'} →</button></aside>` : ''}
   <section aria-labelledby="levelTitle">
     <div class="level-heading"><h2 id="levelTitle">어떤 난이도에 도전할까요?</h2><span class="muted">난이도마다 4단계 · 단계마다 그림이 무작위로 나와요</span></div>
     <div class="level-grid">
       ${Object.entries(LEVELS).map(([k, d]) => `
-      <article class="level-card ${k}">
-        <div class="card-head"><h3>${d.name}</h3><span class="dots" aria-hidden="true">${d.dots}</span></div>
+      <article class="level-card ${k} ${allowed[k] ? '' : 'locked'}">
+        <div class="card-head"><h3>${d.name}</h3><span class="dots" aria-hidden="true">${allowed[k] ? d.dots : '🔒'}</span></div>
         <div class="card-body"><p>${d.summary}</p>
           <div class="tagrow">${d.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
-          <button class="primary" data-start="${k}">${d.name} 시작하기 →</button>
+          ${allowed[k] ? `<button class="primary" data-start="${k}">${d.name} 시작하기 →</button>`
+                       : '<button class="primary" disabled>🔒 지금은 잠겨 있어요</button>'}
         </div>
       </article>`).join('')}
     </div>
@@ -179,6 +182,7 @@ function renderLobby() {
 }
 
 function start(difficulty) {
+  if (!Store.settings.allowed[difficulty]) return toast('선생님이 이 난이도를 잠갔어요.');
   if (state.session && !state.session.finishedAt) logDraft('새 도전 전');
   state.session = {
     difficulty,
@@ -220,8 +224,13 @@ function renderGame() {
         <div class="chips">${st.chips.map(x => `<span class="chip">${x}</span>`).join('')}</div>
         <label class="input-label" for="prompt">그림을 못 본 친구도 떠올릴 수 있도록 써 보세요.</label>
         <textarea id="prompt" maxlength="1000" placeholder="무엇이 보이나요? 가장 눈에 띄는 것부터 써 보세요.">${esc(s.drafts[i])}</textarea>
-        <div class="text-meta"><span>${s.tries[i] ? '점검 ' + s.tries[i] + '번 했어요' : '짧아도 괜찮아요. 구체적으로!'}</span><span id="counter">${s.drafts[i].length} / 1000</span></div>
+        <div class="text-meta"><span id="tryMeta"></span><span id="counter">${s.drafts[i].length} / 1000</span></div>
         <button class="primary full" id="check">내 설명 점검하기 ↗</button>
+        <div id="outOfTries" class="feedback-box retry" hidden>
+          <h2>점검 기회를 모두 썼어요</h2>
+          <p>다른 그림으로 새로 도전해 볼까요? 선생님께 도움을 요청해도 좋아요.</p>
+          <button class="outline compact" id="rerollOut" type="button">다른 그림으로 다시 ↻</button>
+        </div>
         <section id="feedback" aria-live="polite"></section>
         <details class="hint" id="hint" ${s.hints[i] ? 'open' : ''}><summary>막막할 땐? 힌트 보기</summary><p>${st.hint}</p></details>
       </div>
@@ -237,12 +246,24 @@ function renderGame() {
   }));
   $('#enlarge').onclick = () => { $('#zoomImage').src = $('#missionImage').src; $('#imageDialog').showModal(); };
   $('#reroll').onclick = reroll;
+  $('#rerollOut').onclick = reroll;
   $('#prompt').oninput = onType;
+  updateTryUi();
   $('#check').onclick = check;
   $('#hint').ontoggle = () => {
     if ($('#hint').open && !s.hints[i]) { s.hints[i] = true; save(); Store.status(liveStatus()); }
   };
   if (s.reviews[i]) renderFeedback(s.reviews[i]);
+}
+
+/* 선생님이 정한 시도 횟수 제한(0이면 제한 없음) */
+function updateTryUi() {
+  if (view !== 'game' || !state.session || !$('#check')) return;
+  const s = state.session, i = s.current, max = Store.settings.maxTries, used = s.tries[i];
+  const out = max > 0 && used >= max && !s.passed[i];
+  $('#tryMeta').textContent = max ? `점검 ${used} / ${max}번` : (used ? `점검 ${used}번 했어요` : '짧아도 괜찮아요. 구체적으로!');
+  $('#check').disabled = out;
+  $('#outOfTries').hidden = !out;
 }
 
 function onType() {
@@ -283,6 +304,9 @@ function makeRecord(text, result, type) {
 
 function check() {
   const s = state.session, i = s.current, text = s.drafts[i].trim();
+  if (Store.settings.paused) return;
+  const max = Store.settings.maxTries;
+  if (max > 0 && s.tries[i] >= max && !s.passed[i]) return updateTryUi();
   if (text.length < 5) {
     $('#feedback').innerHTML = '<div class="feedback-box retry"><h2>본 것을 한 문장으로 써 볼까요?</h2><p>다섯 글자 이상 쓰면 핵심 표현을 함께 확인할 수 있어요.</p></div>';
     $('#prompt').focus();
@@ -300,7 +324,7 @@ function check() {
   save();
   Store.attempt(rec, liveStatus({ currentDraft: text, latestPercent: result.percent, latestPass: result.pass, lastPrompt: text, lastInputAt: 'now' }));
   renderFeedback(result);
-  $('.text-meta span').textContent = '점검 ' + s.tries[i] + '번 했어요';
+  updateTryUi();
   if (result.pass) {
     APP.querySelector(`[data-stage="${i}"] .num`).textContent = '✓';
     APP.querySelectorAll('[data-stage]').forEach(b => (b.disabled = !unlocked(Number(b.dataset.stage))));
@@ -420,6 +444,52 @@ document.querySelectorAll('[data-close]').forEach(b => (b.onclick = () => $('#' 
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
 Store.on('error', toast);
 Store.on('net', () => updateHeader());
+Store.on('settings', applySettings);
+
+/* ───────── 선생님 수업 제어 반영 ───────── */
+let lastAllowed = '';
+function applySettings(st) {
+  if (!Store.profile) return;
+  // 1) 전체 일시정지
+  const ov = $('#pauseOverlay');
+  if (st.paused && ov.hidden) { document.activeElement && document.activeElement.blur && document.activeElement.blur(); Store.flushDraft(); }
+  ov.hidden = !st.paused;
+  // 2) 난이도 잠금
+  const allowedKey = JSON.stringify(st.allowed);
+  if (view === 'game' && state.session && !st.allowed[state.session.difficulty]) {
+    logDraft('잠금 전');
+    toast('선생님이 이 난이도를 잠갔어요. 다른 난이도를 골라 주세요.');
+    view = 'lobby'; render(); Store.status(liveStatus());
+  } else if (view === 'lobby' && lastAllowed && lastAllowed !== allowedKey) {
+    renderLobby();
+  }
+  lastAllowed = allowedKey;
+  // 3) 시도 횟수 제한
+  updateTryUi();
+  // 4) 선생님이 보낸 좋은 예시
+  showBroadcast(st.broadcast);
+}
+
+function showBroadcast(b) {
+  const d = $('#exampleDialog');
+  if (!b || !b.id) { if (d.open) d.close(); return; }
+  let seen = null;
+  try { seen = sessionStorage.getItem('swysSeenExample'); } catch { /* 무시 */ }
+  if (seen === b.id) return;
+  try { sessionStorage.setItem('swysSeenExample', b.id); } catch { /* 무시 */ }
+  const m = byId.get(b.missionId);
+  $('#exampleBody').innerHTML = `
+    <span class="eyebrow">선생님이 보낸 좋은 예시 ✨</span>
+    <div class="example-wrap">
+      ${m ? imageTag(m, '예시 그림', 'class="example-img"') : ''}
+      <div>
+        <small class="muted">${esc(LEVELS[b.difficulty]?.name || '')} ${b.stage ? b.stage + '단계' : ''} · ${esc(b.mission || '')}</small>
+        <p class="example-text">“${highlightPrompt(b.prompt, m)}”</p>
+        <p class="muted tiny">형광펜 칠한 부분이 핵심 표현이에요. 내 문장에도 넣어 볼까요?</p>
+      </div>
+    </div>`;
+  if (!d.open) d.showModal();
+}
 
 /* ───────── 시작 ───────── */
 (async () => {
@@ -429,5 +499,6 @@ Store.on('net', () => updateHeader());
   if (URL_CODE && Store.mode === 'cloud' && Store.profile && Store.profile.classCode !== URL_CODE) Store.leave();
   if (Store.profile) { load(); view = 'lobby'; }
   render();
+  if (Store.profile) applySettings(Store.settings);
   if (warning) toast(warning);
 })();

@@ -19,8 +19,29 @@ window.Store = (() => {
   let db = null, auth = null, uid = null;
   let profile = null, classInfo = null;
   let draftTimer = null, pendingDraft = null, lastDraftAt = 0, beatTimer = null;
-  let errorShown = false;
-  const handlers = { error: () => {}, net: () => {} };
+  let errorShown = false, unwatchClass = null;
+  const handlers = { error: () => {}, net: () => {}, settings: () => {} };
+
+  /* 교사가 바꾸는 수업 설정을 실시간으로 받아요 (일시정지·난이도 잠금·통과 기준·시도 제한·예시 보내기) */
+  function watchClass() {
+    if (unwatchClass) unwatchClass();
+    unwatchClass = classRef(profile.classCode).onSnapshot(snap => {
+      if (!snap.exists) return;
+      classInfo = snap.data();
+      handlers.settings(settings());
+    }, err => console.warn('[Store] class watch', err));
+  }
+  function settings() {
+    const s = (classInfo && classInfo.settings) || {};
+    const allowed = s.allowed || {};
+    return {
+      paused: s.paused === true,
+      allowed: { easy: allowed.easy !== false, medium: allowed.medium !== false, hard: allowed.hard !== false },
+      passRatio: typeof s.passRatio === 'number' ? s.passRatio : 0.8,
+      maxTries: Number(s.maxTries) || 0, // 0 = 제한 없음
+      broadcast: (classInfo && classInfo.broadcast) || null,
+    };
+  }
 
   const loadScript = src => new Promise((ok, no) => {
     const s = document.createElement('script');
@@ -73,7 +94,7 @@ window.Store = (() => {
     if (profile && mode === 'cloud') {
       try { classInfo = await fetchClass(profile.classCode); } catch (e) { console.warn(e); }
       if (!classInfo) { profile = null; writeProfile(null); }
-      else { profile.uid = uid; writeProfile(profile); startBeat(); status({ online: true }); }
+      else { profile.uid = uid; writeProfile(profile); startBeat(); watchClass(); status({ online: true }); }
     }
     window.addEventListener('online', () => handlers.net(true));
     window.addEventListener('offline', () => handlers.net(false));
@@ -98,12 +119,14 @@ window.Store = (() => {
     await studentRef().set({ ...base(), joinedAt: ts(), lastActive: ts(), online: true }, { merge: true });
     writeProfile(profile);
     startBeat();
+    watchClass();
     return profile;
   }
 
   function leave() {
     if (mode === 'cloud' && profile) { flushDraft(); status({ online: false }); }
     stopBeat();
+    if (unwatchClass) { unwatchClass(); unwatchClass = null; }
     profile = null; classInfo = null;
     writeProfile(null);
   }
@@ -167,7 +190,8 @@ window.Store = (() => {
     on: (name, fn) => { handlers[name] = fn; },
     get mode() { return mode; },
     get profile() { return profile; },
-    get passRatio() { const r = classInfo && classInfo.settings && classInfo.settings.passRatio; return typeof r === 'number' ? r : 0.8; },
+    get passRatio() { return settings().passRatio; },
+    get settings() { return settings(); },
     get className() { return classInfo ? classInfo.name : ''; },
   };
 })();

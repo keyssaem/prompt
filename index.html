@@ -52,6 +52,15 @@
     </div>
   </dialog>
 
+  <div id="pauseOverlay" class="pause-overlay" role="alertdialog" aria-label="일시정지" hidden>
+    <div><div class="pause-icon" aria-hidden="true">✋</div><h2>잠깐! 선생님을 봐 주세요</h2><p>선생님이 다시 시작하면 이어서 할 수 있어요. 쓰던 글은 그대로 남아 있어요.</p></div>
+  </div>
+
+  <dialog id="exampleDialog" class="example-dialog">
+    <div id="exampleBody"></div>
+    <div class="dialog-actions"><button class="primary" data-close="exampleDialog" type="button">확인했어요</button></div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" hidden></div>
 
   <script src="js/firebase-config.js"></script>

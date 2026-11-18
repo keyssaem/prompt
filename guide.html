@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>교사용 사용 설명서 · 보이는 걸 말해 봐</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .guide { max-width: 860px; }
+    .guide h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); }
+    .guide h2 { margin-top: 36px; padding-top: 12px; border-top: 2px solid var(--line); }
+    .guide h3 { margin-top: 20px; }
+    .guide li { margin-bottom: 6px; }
+    .guide .toc { background: var(--card); border-radius: var(--radius); padding: 16px 22px; box-shadow: var(--shadow); }
+    .guide .toc ol { margin: 6px 0 0; padding-left: 20px; columns: 2; }
+    .guide .box { background: var(--card); border-radius: 14px; padding: 14px 18px; border: 1px solid var(--line); margin: 12px 0; }
+    .guide .tip { background: var(--ok-soft); border: 0; }
+    .guide .warn { background: var(--warn-soft); border: 0; }
+    .guide table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
+    .guide th, .guide td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .guide th { background: var(--bg); }
+    .guide code { background: var(--bg); padding: 1px 6px; border-radius: 6px; }
+    .st { display: inline-block; font-weight: 800; font-size: .8rem; padding: 1px 8px; border-radius: 999px; color: #fff; }
+    .st.w { background: #2f7de1; } .st.p { background: #2e9e5b; } .st.s { background: #e5484d; } .st.d { background: #8b5cf6; } .st.q { background: #9aa0ad; }
+    @media (max-width: 640px) { .guide .toc ol { columns: 1; } }
+    @media print { .topbar { display: none; } .guide h2 { break-before: auto; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="teacher.html" style="color:inherit;text-decoration:none"><span aria-hidden="true">📘</span> 교사용 사용 설명서</a>
+    <div class="top-actions"><a class="text-button" href="teacher.html">교사 화면으로</a><button class="text-button" type="button" onclick="print()">인쇄</button></div>
+  </header>
+  <main class="wrap guide">
+    <span class="eyebrow">보이는 걸 말해 봐 · 한국어 이미지 프롬프트 연습</span>
+    <h1>선생님을 위한 사용 설명서</h1>
+    <p class="muted">학생은 그림을 보고 한국어로 설명(프롬프트)을 쓰고, 선생님은 그 과정을 실시간으로 보며 수업을 이끌어요.</p>
+
+    <nav class="toc" aria-label="차례"><b>차례</b>
+      <ol>
+        <li><a href="#before">수업 전 준비</a></li>
+        <li><a href="#join">학생 참여시키기</a></li>
+        <li><a href="#dash">대시보드 읽기</a></li>
+        <li><a href="#control">수업 제어</a></li>
+        <li><a href="#example">좋은 예시 보여 주기</a></li>
+        <li><a href="#analysis">수업 분석</a></li>
+        <li><a href="#board">전자칠판 큰 화면</a></li>
+        <li><a href="#download">기록 내려받기</a></li>
+        <li><a href="#delete">학기 말 기록 지우기</a></li>
+        <li><a href="#privacy">개인정보와 보안</a></li>
+        <li><a href="#faq">자주 묻는 질문</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="before">1. 수업 전 준비</h2>
+    <ol>
+      <li><a href="teacher.html">교사 화면</a>에서 <b>Google 계정으로 로그인</b>해요.</li>
+      <li><b>새 학급 만들기</b>에 학급 이름(예: 6학년 6반)을 넣으면 6자리 <b>참여 코드</b>가 생겨요. 학급은 한 번 만들면 계속 쓸 수 있어요.</li>
+      <li>처음이라면 <a href="teacher.html?demo">미리보기 모드</a>에서 가짜 학생 12명으로 화면을 먼저 둘러보세요. 로그인이 필요 없어요.</li>
+    </ol>
+    <div class="box tip">💡 <b>미리 시험해 보기:</b> 학생 화면은 다른 브라우저나 시크릿 창에서 열어 주세요. 같은 브라우저에서 교사와 학생으로 함께 접속하면 로그인 정보가 섞여요.</div>
+
+    <h2 id="join">2. 학생 참여시키기</h2>
+    <ul>
+      <li>대시보드 오른쪽 위 <b>QR 코드</b>를 누르면 크게 보여요. 학생이 태블릿 카메라로 찍으면 <b>학급 코드가 채워진 채로</b> 열려요.</li>
+      <li>학생은 <b>번호(1~40)</b>와 <b>별명(10자 이하)</b>만 입력해요. 실명을 쓰지 않아도 돼요.</li>
+      <li>QR을 쓰지 않을 때는 학생 주소에 들어가 참여 코드를 직접 입력해요. <b>주소 복사</b> 버튼으로 주소를 공유할 수도 있어요.</li>
+      <li><b>참여 허용</b> 체크를 끄면 새 학생이 들어올 수 없어요. 이미 들어온 학생은 계속할 수 있어요.</li>
+      <li>여러 학생이 한 태블릿을 쓰면, 앞 학생이 오른쪽 위 <b>나가기</b>를 누른 뒤 다음 학생이 참여해요.</li>
+    </ul>
+
+    <h2 id="dash">3. 대시보드 읽기</h2>
+    <p>학생 한 명이 카드 한 장이에요. 카드 내용은 학생이 글을 쓰는 동안 몇 초 안에 바뀌어요.</p>
+    <table>
+      <tr><th>상태</th><th>뜻</th></tr>
+      <tr><td><span class="st s">막힘</span></td><td>같은 단계에서 <b>3번 연속 통과하지 못했거나</b>, 접속 중인데 <b>2분 동안 입력이 없어요</b>. 먼저 가서 도와주세요.</td></tr>
+      <tr><td><span class="st w">작성 중</span></td><td>지금 쓰고 있어요.</td></tr>
+      <tr><td><span class="st p">통과</span></td><td>지금 단계를 통과했어요. 다음 단계로 넘어가기 직전이에요.</td></tr>
+      <tr><td><span class="st d">완료</span></td><td>한 난이도의 4단계를 모두 마쳤어요. 🏅는 완료한 횟수예요.</td></tr>
+      <tr><td><span class="st q">대기</span></td><td>난이도를 고르기 전이거나 첫 화면에 있어요.</td></tr>
+    </table>
+    <ul>
+      <li>카드의 ①②③④는 단계예요. ✓는 통과, 테두리가 있는 숫자는 지금 하고 있는 단계예요. 💡는 힌트를 본 단계예요.</li>
+      <li>막대와 %는 최근 점검에서 찾은 핵심 표현의 비율이에요.</li>
+      <li>위쪽 버튼으로 상태별로 거르거나 정렬할 수 있어요(번호순·막힘 먼저·진행순·최근 활동순). −/+로 한 줄에 보이는 카드 수를 바꿔요.</li>
+      <li>카드를 누르면 그 학생의 <b>단계별 처음 → 마지막 문장</b>과 <b>시간순 기록 전체</b>가 보여요.</li>
+    </ul>
+
+    <h2 id="control">4. 수업 제어</h2>
+    <table>
+      <tr><th>기능</th><th>사용법</th></tr>
+      <tr><td>⏸ 모두 멈추기</td><td>모든 학생 화면에 “잠깐! 선생님을 봐 주세요”가 떠요. 설명할 때 써요. 쓰던 글은 그대로 남아요. <b>▶ 다시 시작</b>으로 풀어요.</td></tr>
+      <tr><td>열린 난이도</td><td>누를 때마다 열림과 🔒잠김이 바뀌어요. 잠긴 난이도는 학생이 시작할 수 없어요. 그 난이도를 하던 학생은 난이도 선택 화면으로 돌아가요. 처음에는 “쉬움”만 열어 두는 것을 추천해요.</td></tr>
+      <tr><td>통과 기준</td><td>핵심 표현을 몇 % 이상 써야 통과인지 정해요(기본 80%). 주인공(대상) 표현은 기준과 상관없이 꼭 써야 해요.</td></tr>
+      <tr><td>점검 횟수</td><td>단계마다 점검할 수 있는 횟수를 정해요(3·5·7·10번 또는 제한 없음). 다 쓰면 학생은 <b>다른 그림으로 다시</b> 도전해요. 한 번 한 번 생각하고 쓰게 하고 싶을 때 써요.</td></tr>
+    </table>
+
+    <h2 id="example">5. 좋은 예시 보여 주기</h2>
+    <ol>
+      <li>“좋은 예시 후보 ✨”에서 문장을 누르거나, 학생 카드 → <b>★ 예시로 띄우기</b>를 눌러요.</li>
+      <li>그림과 문장이 큰 글씨로 떠요. 핵심 표현에는 <mark>형광펜</mark>이 칠해져 있어요. <b>이름은 보이지 않아요.</b></li>
+      <li><b>📣 학생 화면에도 보내기</b>를 누르면 모든 학생 화면에 같은 예시가 떠요. 다시 보내려면 다른 예시를 보내고, 거두려면 <b>내리기</b>를 눌러요.</li>
+    </ol>
+    <div class="box tip">💡 “이 문장에서 위치를 알려 주는 말은 무엇일까요?”처럼 형광펜 부분을 함께 읽으며 질문해 보세요.</div>
+
+    <h2 id="analysis">6. 수업 분석 · 자주 놓친 표현</h2>
+    <ul>
+      <li><b>놓친 비율</b> = 그 표현이 필요한 점검 가운데 빠져 있던 점검의 비율이에요. 예: “위치 70%”는 위치 표현이 필요한 문장의 70%에 위치 표현이 없었다는 뜻이에요.</li>
+      <li><b>처음 점검만</b>(기본): 학생이 그림마다 처음 쓴 문장만 봐요. 무엇을 처음부터 놓치는지 알 수 있어요. <b>모든 점검</b>: 고쳐 쓴 문장까지 모두 봐요.</li>
+      <li>놓친 비율이 30%를 넘으면 위쪽에 <b>교수 포인트</b>가 나와요. 활동을 잠시 멈추고 다 같이 짚어 주기 좋아요.</li>
+      <li>점검 횟수가 3번보다 적은 표현은 흐리게 보여요. 결론을 내리기에는 아직 이르다는 뜻이에요.</li>
+    </ul>
+
+    <h2 id="board">7. 전자칠판 큰 화면</h2>
+    <ul>
+      <li><b>🖥 큰 화면</b>을 누르면 글씨가 커지고 학생 카드와 참여 QR만 남아요. 다시 누르면 원래 화면으로 돌아와요.</li>
+      <li><b>이름 가리기</b>를 켜면 카드에 번호만 보여요. 학생들이 함께 보는 화면에 띄울 때 추천해요.</li>
+      <li>이 두 설정은 이 기기의 브라우저가 기억해요.</li>
+    </ul>
+
+    <h2 id="download">8. 기록 내려받기</h2>
+    <table>
+      <tr><th>파일</th><th>내용</th></tr>
+      <tr><td>엑셀 (.xlsx)</td><td>시트 3개: <b>학생 요약</b>(상태·점검 수·평균 %), <b>처음과 마지막</b>(단계별 문장 비교·확인률 변화), <b>시도 기록</b>(모든 문장)</td></tr>
+      <tr><td>CSV</td><td>시도 기록 전체, 또는 학생 요약. 한글이 깨지지 않게 저장돼요.</td></tr>
+      <tr><td>학생별 결과 인쇄 / PDF</td><td>학생 한 명이 A4 한 쪽이에요. 처음·마지막 문장 표와 “스스로 돌아보기” 칸이 있어요. 인쇄 창에서 “PDF로 저장”을 고르면 파일로 받을 수 있어요.</td></tr>
+    </table>
+
+    <h2 id="delete">9. 학기 말 기록 지우기</h2>
+    <div class="box warn">⚠️ 지운 기록은 <b>되돌릴 수 없어요.</b> 꼭 먼저 엑셀로 내려받아 보관하세요.</div>
+    <ul>
+      <li><b>학생 한 명</b>: 학생 카드 → <b>기록 지우기</b></li>
+      <li><b>학생 기록 모두 지우기</b>: 학급과 참여 코드는 남기고, 학생과 시도 기록만 지워요. 지우는 동안 참여가 닫혀요. 다음 학기에 다시 열어 쓰면 돼요.</li>
+      <li><b>학급 삭제</b>: 학급과 모든 기록을 지워요. 참여 코드도 더 이상 쓸 수 없어요.</li>
+      <li>실수로 지우지 않도록 <b>학급 코드를 입력</b>해야 지워져요.</li>
+    </ul>
+
+    <h2 id="privacy">10. 개인정보와 보안</h2>
+    <ul>
+      <li>학생 이름·이메일·계정은 저장하지 않아요. <b>번호, 별명, 쓴 문장</b>만 저장해요. 학생은 기기마다 자동으로 만들어진 익명 계정을 써요.</li>
+      <li>학생은 <b>자기 기록만</b> 쓸 수 있고, 다른 학생의 기록이나 학급 목록은 볼 수 없어요.</li>
+      <li>선생님은 <b>자기가 만든 학급</b>의 기록만 보고 지울 수 있어요.</li>
+      <li>별명에 실명이나 개인정보를 쓰지 않도록 미리 안내해 주세요.</li>
+      <li>이 연습은 AI 이미지 생성을 쓰지 않아요. 학생 문장은 Firebase(구글 클라우드, 서울 지역)에만 저장돼요.</li>
+    </ul>
+
+    <h2 id="faq">11. 자주 묻는 질문</h2>
+    <h3>학생이 “그런 학급 코드가 없어요”라고 해요.</h3>
+    <p>코드를 다시 확인해 주세요. 헷갈리는 글자(0과 O, 1과 I)는 코드에 쓰지 않아요. QR로 들어오면 코드를 잘못 칠 일이 없어요.</p>
+    <h3>학생 화면 위에 “혼자 연습 모드”라고 나와요.</h3>
+    <p>학급 서버에 연결되지 않은 상태예요. 인터넷 연결을 확인하고 새로고침해 주세요. 혼자 연습 모드의 기록은 선생님 화면에 나타나지 않아요.</p>
+    <h3>같은 뜻으로 썼는데 표현을 못 찾았대요.</h3>
+    <p>미리 정해 둔 낱말로 찾기 때문에 다른 말로 쓰면 놓칠 수 있어요. 학생 카드를 열어 문장을 확인하고, 직접 칭찬해 주세요. 필요하면 <code>js/missions.js</code>의 표현 목록에 낱말을 추가할 수 있어요.</p>
+    <h3>한 반에 몇 명까지 괜찮나요?</h3>
+    <p>가상 학생 30명이 동시에 2분 동안 쓰고 점검하는 시험에서 오류가 없었어요. 교사 화면에도 1초 안에 반영됐어요. 무료 사용량(하루 쓰기 2만 회)으로 한 반 40분 수업 여러 번이 충분해요.</p>
+    <h3>그림을 실제 사진으로 바꾸고 싶어요.</h3>
+    <p><code>assets/photos/</code> 폴더에 그림 번호와 같은 이름의 파일(예: <code>e1a.webp</code>)을 넣으면 그 사진이 대신 나와요.</p>
+  </main>
+</body>
+</html>

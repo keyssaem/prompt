@@ -36,6 +36,12 @@ let filter = 'all';
 let sortBy = 'number';
 let detailSid = null;
 let cols = Number(readPref('cols', 5));
+let demo = false;                                // 미리보기 모드
+let board = readPref('board', '') === '1';       // 큰 화면(전자칠판) 모드
+let hideNames = readPref('hideNames', '') === '1';
+let missedBasis = 'first';                       // 분석 기준: 처음 점검만 / 모든 점검
+let showItem = null;                             // 크게 띄운 좋은 예시
+let dangerJob = null;                            // 지우기 확인 중인 작업
 
 /* ───────── 공통 도구 ───────── */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -146,6 +152,11 @@ async function openClass(code) {
     drawInsights();
     if (detailSid) drawDetail();
   }, liveError));
+  unsubs.push(ref.onSnapshot(snap => { // 수업 설정·보낸 예시가 바뀌면 제어판 갱신
+    if (!snap.exists) return;
+    cls = { code, ...snap.data() };
+    drawControls();
+  }, liveError));
   tick = setInterval(() => refresh(new Set()), 10000); // 접속·막힘 상태는 시간이 지나면 바뀌어요
 }
 function liveError(err) { console.warn(err); toast('실시간 연결에 실패했어요. 보안 규칙을 확인해 주세요.'); }
@@ -167,11 +178,17 @@ function renderShell() {
     </div>
   </div>
 
+  <div class="paused-banner" id="pausedBanner" hidden>⏸ 지금 학생 화면이 멈춰 있어요. <button type="button" class="text-button" id="resumeAll">다시 시작하기 ▶</button></div>
+
   <section class="summary" id="summary"></section>
+
+  <section class="t-card controls" id="controls" aria-label="수업 제어"></section>
 
   <section class="toolbar">
     <div class="filters" id="filters" role="tablist" aria-label="상태로 거르기"></div>
     <div class="tools">
+      <label class="toggle-chip"><input type="checkbox" id="hideNames"> 이름 가리기</label>
+      <button class="outline compact" id="boardBtn" type="button" aria-pressed="false">🖥 큰 화면</button>
       <select id="sortBy" aria-label="정렬">
         <option value="number">번호순</option><option value="status">상태순(막힘 먼저)</option><option value="progress">진행순</option><option value="recent">최근 활동순</option>
       </select>
@@ -191,12 +208,43 @@ function renderShell() {
   <section class="grid" id="grid" style="--cols:${cols}"></section>
 
   <section class="t-card insights">
-    <h2>자주 놓친 표현</h2>
-    <p class="muted tiny">학생들이 점검했을 때 빠져 있던 표현이에요. 다 같이 짚어 줄 부분을 찾는 데 써 보세요.</p>
+    <div class="t-row" style="justify-content:space-between">
+      <div><h2 style="margin:0">수업 분석 · 자주 놓친 표현</h2>
+        <p class="muted tiny" style="margin:0">그 표현이 필요한 점검 중에서 빠져 있던 비율이에요. 비율이 높은 표현을 다 같이 짚어 주세요.</p></div>
+      <select id="missedBasis" aria-label="분석 기준">
+        <option value="first">처음 점검만 (처음 쓴 문장 기준)</option>
+        <option value="all">모든 점검</option>
+      </select>
+    </div>
     <div id="missed"></div>
   </section>
 
+  <section class="t-card examples-card">
+    <h2 style="margin:0">좋은 예시 후보 ✨</h2>
+    <p class="muted tiny">통과한 문장 중 핵심 표현을 많이 담은 문장이에요. 누르면 이름 없이 큰 화면에 띄울 수 있어요.</p>
+    <div id="examples" class="examples"></div>
+  </section>
+
+  <section class="t-card admin">
+    <h2 style="margin:0">학급 관리 · 기록 지우기</h2>
+    <p class="muted tiny">학기가 끝나면 먼저 <b>내려받기</b>로 기록을 보관한 뒤 지워 주세요. 지운 기록은 되돌릴 수 없어요.</p>
+    <div class="t-row">
+      <button class="outline compact danger" id="wipeRecords" type="button">학생 기록 모두 지우기 (학급은 남김)</button>
+      <button class="outline compact danger" id="deleteClass" type="button">학급 삭제 (모든 기록 포함)</button>
+    </div>
+  </section>
+
   <dialog id="detailDialog" class="detail-dialog"><div id="detailBody"></div></dialog>
+
+  <dialog id="showDialog" class="show-dialog" aria-label="좋은 예시 크게 보기"><div id="showBody"></div></dialog>
+
+  <dialog id="dangerDialog" class="danger-dialog">
+    <h2 id="dangerTitle"></h2>
+    <p id="dangerText"></p>
+    <label class="danger-confirm">확인을 위해 학급 코드 <b class="code">${cls.code}</b>를 입력하세요.<input id="dangerInput" autocomplete="off" maxlength="8"></label>
+    <p class="form-error" id="dangerError"></p>
+    <div class="dialog-actions"><button class="outline" type="button" id="dangerCancel">취소</button><button class="primary danger-btn" type="button" id="dangerOk">지우기</button></div>
+  </dialog>
 
   <dialog id="qrDialog" class="qr-dialog" aria-label="학생 참여 QR 코드">
     <div class="qr-big qr-svg" id="qrBig"></div>
@@ -229,8 +277,204 @@ function renderShell() {
   $('#copyLink').onclick = () => navigator.clipboard.writeText(joinUrl(cls.code))
     .then(() => toast('참여 주소를 복사했어요.')).catch(() => toast('복사하지 못했어요. 주소를 직접 선택해 주세요.'));
   drawQr();
+  // 4단계: 수업 제어 · 큰 화면 · 이름 가리기 · 분석 기준 · 좋은 예시
+  $('#resumeAll').onclick = () => updateClass({ 'settings.paused': false });
+  $('#hideNames').checked = hideNames;
+  $('#hideNames').onchange = e => { hideNames = e.target.checked; writePref('hideNames', hideNames ? '1' : ''); applyView(); };
+  $('#boardBtn').onclick = () => { board = !board; writePref('board', board ? '1' : ''); applyView(); };
+  $('#missedBasis').value = missedBasis;
+  $('#missedBasis').onchange = e => { missedBasis = e.target.value; drawInsights(); };
+  const sd = $('#showDialog');
+  sd.addEventListener('click', e => { if (e.target === sd) sd.close(); });
+  // 6단계: 기록 지우기
+  $('#wipeRecords').onclick = () => confirmDanger('wipe');
+  $('#deleteClass').onclick = () => confirmDanger('class');
+  $('#dangerCancel').onclick = () => $('#dangerDialog').close();
+  $('#dangerOk').onclick = runDanger;
+  drawControls();
+  applyView();
   refresh(new Set());
   drawInsights();
+}
+
+/* ───────── 4단계: 수업 제어 ───────── */
+function settingsOf() {
+  const s = (cls && cls.settings) || {};
+  const a = s.allowed || {};
+  return {
+    paused: s.paused === true,
+    allowed: { easy: a.easy !== false, medium: a.medium !== false, hard: a.hard !== false },
+    passRatio: typeof s.passRatio === 'number' ? s.passRatio : 0.8,
+    maxTries: Number(s.maxTries) || 0,
+    broadcast: (cls && cls.broadcast) || null,
+  };
+}
+
+function setPath(obj, path, value) {
+  const keys = path.split('.');
+  let t = obj;
+  keys.slice(0, -1).forEach(k => { if (!t[k] || typeof t[k] !== 'object') t[k] = {}; t = t[k]; });
+  t[keys.at(-1)] = value;
+}
+
+/* 학급 문서 바꾸기 → 학생 화면에 실시간 반영 (미리보기 모드에서는 이 화면에만 반영) */
+async function updateClass(patch) {
+  if (demo) { Object.entries(patch).forEach(([k, v]) => setPath(cls, k, v)); drawControls(); return; }
+  try { await db.collection('classes').doc(cls.code).update(patch); }
+  catch (e) { console.warn(e); toast('바꾸지 못했어요. 인터넷 연결을 확인해 주세요.'); }
+}
+
+function drawControls() {
+  const box = $('#controls'); if (!box) return;
+  const st = settingsOf();
+  box.innerHTML = `
+    <div class="ctl"><span class="ctl-label">열린 난이도</span>
+      <div class="seg">${Object.keys(LEVELS).map(k => `<button type="button" class="seg-btn ${k} ${st.allowed[k] ? 'on' : ''}" data-lv="${k}" aria-pressed="${st.allowed[k]}" title="눌러서 ${st.allowed[k] ? '잠그기' : '열기'}">${st.allowed[k] ? '' : '🔒 '}${LEVELS[k].name}</button>`).join('')}</div></div>
+    <div class="ctl"><label class="ctl-label" for="passRatio">통과 기준</label>
+      <select id="passRatio">${[0.5, 0.6, 0.7, 0.8, 0.9, 1].map(r => `<option value="${r}" ${Math.abs(r - st.passRatio) < 0.001 ? 'selected' : ''}>핵심 표현 ${Math.round(r * 100)}% 이상</option>`).join('')}</select></div>
+    <div class="ctl"><label class="ctl-label" for="maxTries">점검 횟수</label>
+      <select id="maxTries">${[0, 3, 5, 7, 10].map(n => `<option value="${n}" ${n === st.maxTries ? 'selected' : ''}>${n ? '단계마다 ' + n + '번까지' : '제한 없음'}</option>`).join('')}</select></div>
+    <div class="ctl ctl-end">
+      ${st.broadcast ? `<span class="bc-on">📣 학생 화면에 예시를 보냈어요 <button type="button" class="text-button" id="bcOff">내리기</button></span>` : ''}
+      <button type="button" class="pause-btn ${st.paused ? 'on' : ''}" id="pauseBtn">${st.paused ? '▶ 다시 시작' : '⏸ 모두 멈추기'}</button>
+    </div>`;
+  box.querySelectorAll('[data-lv]').forEach(b => (b.onclick = () => {
+    const k = b.dataset.lv, next = !st.allowed[k];
+    if (!next && Object.values(st.allowed).filter(Boolean).length === 1) return toast('난이도는 하나 이상 열어 두어야 해요.');
+    updateClass({ ['settings.allowed.' + k]: next });
+  }));
+  $('#passRatio').onchange = e => updateClass({ 'settings.passRatio': Number(e.target.value) });
+  $('#maxTries').onchange = e => updateClass({ 'settings.maxTries': Number(e.target.value) });
+  $('#pauseBtn').onclick = () => updateClass({ 'settings.paused': !st.paused });
+  const off = $('#bcOff'); if (off) off.onclick = () => updateClass({ broadcast: null });
+  $('#pausedBanner').hidden = !st.paused;
+  if (showItem && $('#showDialog').open) drawShowcase();
+}
+
+/* 큰 화면(전자칠판) · 이름 가리기 */
+function applyView() {
+  document.body.classList.toggle('board', board);
+  document.body.classList.toggle('hide-names', hideNames);
+  const b = $('#boardBtn');
+  if (b) { b.setAttribute('aria-pressed', String(board)); b.textContent = board ? '🖥 큰 화면 끄기' : '🖥 큰 화면'; }
+}
+
+/* ───────── 4단계: 좋은 예시 보여 주기 ───────── */
+function openShowcase(a) {
+  if (!a) return;
+  showItem = a;
+  drawShowcase();
+  const d = $('#showDialog');
+  if (!d.open) d.showModal();
+}
+
+function drawShowcase() {
+  const a = showItem, m = byMission.get(a.missionId), st = settingsOf();
+  const live = st.broadcast && st.broadcast.sourceId === a.id;
+  const found = m ? m.criteria.filter((c, i) => (Array.isArray(a.matches) ? a.matches[i] : new RegExp(c.pattern, 'u').test(a.prompt))).map(c => c.label) : [];
+  $('#showBody').innerHTML = `
+    <div class="show-top"><span class="eyebrow">좋은 예시 ✨ 이름은 보이지 않아요</span><button class="dialog-close" type="button" id="closeShow" aria-label="닫기">✕</button></div>
+    <div class="show-wrap">
+      ${missionImg(a.missionId)}
+      <div>
+        <small class="muted">${levelName(a.difficulty)} ${a.stage}단계 · ${esc(a.mission)} · 핵심 표현 ${a.count ?? found.length}/${a.total ?? (m ? m.criteria.length : '')}</small>
+        <p class="show-text">“${highlightPrompt(a.prompt, m)}”</p>
+        <div class="chips">${found.map(l => `<span class="chip found">✓ ${esc(l)}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      ${live ? '<span class="bc-on">📣 학생 화면에 보이는 중</span><button class="outline" type="button" id="bcOff2">학생 화면에서 내리기</button>'
+             : '<button class="primary" type="button" id="bcSend">📣 학생 화면에도 보내기</button>'}
+    </div>`;
+  $('#closeShow').onclick = () => $('#showDialog').close();
+  const send = $('#bcSend');
+  if (send) send.onclick = () => updateClass({ broadcast: {
+    id: randomId(), sourceId: a.id || '', prompt: a.prompt, missionId: a.missionId, mission: a.mission,
+    difficulty: a.difficulty, stage: a.stage, sentAt: demo ? new Date().toISOString() : firebase.firestore.FieldValue.serverTimestamp(),
+  } }).then(() => toast('학생 화면에 예시를 보냈어요. (이름은 보이지 않아요)'));
+  const off = $('#bcOff2'); if (off) off.onclick = () => updateClass({ broadcast: null });
+}
+
+function randomId() { const r = new Uint32Array(2); crypto.getRandomValues(r); return Array.from(r, x => x.toString(36)).join(''); }
+
+/* 통과한 문장 중 학생·그림별 가장 좋은 문장 */
+function exampleCandidates() {
+  const best = new Map();
+  attempts.filter(a => a.type === '점검' && a.pass).forEach(a => {
+    const k = a.uid + '|' + a.missionId, p = best.get(k);
+    if (!p || a.percent > p.percent || (a.percent === p.percent && ms(a.time) > ms(p.time))) best.set(k, a);
+  });
+  return [...best.values()].sort((a, b) => (b.percent - a.percent) || (b.count - a.count) || (b.prompt.length - a.prompt.length)).slice(0, 8);
+}
+
+function drawExamples() {
+  const box = $('#examples'); if (!box) return;
+  const list = exampleCandidates();
+  box.innerHTML = list.length ? list.map(a => `
+    <button type="button" class="ex-card" data-ex="${esc(a.id)}">
+      ${missionImg(a.missionId)}
+      <span><small class="muted">${levelName(a.difficulty)} ${a.stage}단계 · ${esc(a.mission)} · ${a.percent}%</small><span class="ex-text">${esc(a.prompt)}</span></span>
+    </button>`).join('') : '<p class="muted">아직 통과한 문장이 없어요.</p>';
+  box.querySelectorAll('[data-ex]').forEach(b => (b.onclick = () => openShowcase(attempts.find(x => x.id === b.dataset.ex))));
+}
+
+/* ───────── 6단계: 기록 지우기 ───────── */
+function confirmDanger(kind, sid) {
+  dangerJob = { kind, sid };
+  const s = sid && students.find(x => x.id === sid);
+  const texts = {
+    wipe: ['학생 기록을 모두 지울까요?', `참여한 학생 ${students.length}명과 시도 기록 ${attempts.length}개를 지워요. 학급과 참여 코드는 남아요. 지우는 동안 참여는 닫아 둘게요.`],
+    class: ['학급을 삭제할까요?', `학급 “${cls.name}”과 모든 학생 기록을 지워요. 참여 코드도 더 이상 쓸 수 없어요.`],
+    student: ['이 학생 기록을 지울까요?', s ? `${studentName(s)}의 상태와 시도 기록 ${studentAttempts(sid).length}개를 지워요.` : ''],
+  }[kind];
+  $('#dangerTitle').textContent = texts[0];
+  $('#dangerText').textContent = texts[1] + ' 지운 기록은 되돌릴 수 없으니 먼저 내려받기를 해 두세요.';
+  $('#dangerInput').value = ''; $('#dangerError').textContent = '';
+  $('#dangerOk').disabled = false;
+  $('#dangerDialog').showModal();
+  $('#dangerInput').focus();
+}
+
+async function deleteRefs(refs) {
+  for (let i = 0; i < refs.length; i += 400) {
+    const b = db.batch();
+    refs.slice(i, i + 400).forEach(r => b.delete(r));
+    await b.commit();
+  }
+}
+
+async function runDanger() {
+  if ($('#dangerInput').value.trim().toUpperCase() !== cls.code) { $('#dangerError').textContent = '학급 코드가 맞지 않아요.'; return; }
+  const { kind, sid } = dangerJob;
+  $('#dangerOk').disabled = true; $('#dangerOk').textContent = '지우는 중…';
+  try {
+    if (demo) {
+      if (kind === 'student') { students = students.filter(s => s.id !== sid); attempts = attempts.filter(a => a.uid !== sid); }
+      else { students = []; attempts = []; }
+    } else {
+      const ref = db.collection('classes').doc(cls.code);
+      if (kind === 'student') {
+        const at = await ref.collection('attempts').where('uid', '==', sid).get();
+        await deleteRefs([...at.docs.map(d => d.ref), ref.collection('students').doc(sid)]);
+      } else {
+        await ref.update({ open: false, broadcast: null });
+        const [st, at] = await Promise.all([ref.collection('students').get(), ref.collection('attempts').get()]);
+        await deleteRefs([...st.docs, ...at.docs].map(d => d.ref));
+        if (kind === 'class') await ref.delete();
+      }
+    }
+    $('#dangerDialog').close();
+    if ($('#detailDialog').open) $('#detailDialog').close();
+    toast(kind === 'class' ? '학급을 삭제했어요.' : kind === 'wipe' ? '학생 기록을 모두 지웠어요. 참여는 닫혀 있어요.' : '학생 기록을 지웠어요.');
+    if (kind === 'class') { location.hash = ''; if (demo) location.href = 'teacher.html'; }
+    else if (demo) { refresh(new Set()); drawInsights(); }
+  } catch (e) {
+    console.warn(e);
+    $('#dangerError').textContent = '지우지 못했어요. 인터넷 연결과 보안 규칙을 확인해 주세요.';
+  } finally {
+    $('#dangerOk').textContent = '지우기';
+    $('#dangerOk').disabled = false;
+  }
 }
 
 /* 학생 참여 주소: 학생 화면(index.html) + ?code=학급코드 → QR로 찍으면 코드가 자동으로 들어가요 */
@@ -348,7 +592,7 @@ function card(s, st, now, flash) {
   return `<button type="button" class="s-card st-${st.key} ${flash ? 'flash' : ''}" data-sid="${esc(s.id)}" aria-label="${esc(studentName(s))}, ${STATUS[st.key].label}">
     <div class="s-head">
       <span class="dot ${on ? 'on' : ''}" title="${on ? '접속 중' : '접속 안 함'}"></span>
-      <b class="s-name">${esc(s.number)}. ${esc(s.nickname)}</b>
+      <b class="s-name">${esc(s.number)}<span class="nick">. ${esc(s.nickname)}</span><span class="num-only">번</span></b>
       <span class="s-badge">${STATUS[st.key].label}</span>
     </div>
     <div class="s-meta">
@@ -367,24 +611,48 @@ function card(s, st, now, flash) {
   </button>`;
 }
 
-/* 자주 놓친 표현: 점검 기록의 missed 라벨을 종류별로 모아요 */
+/* 수업 분석: 표현 종류별 "놓친 비율" = 그 표현이 필요한 점검 중 빠진 점검의 비율 */
+const MIN_SAMPLE = 3; // 표본이 너무 적으면 순위에서 빼요
+function missedStats() {
+  let checks = attempts.filter(a => a.type === '점검' && Array.isArray(a.matches) && byMission.has(a.missionId));
+  if (missedBasis === 'first') { // 학생이 그림마다 처음 점검한 문장만 (처음 쓸 때 무엇을 놓치는지)
+    const seen = new Set();
+    checks = checks.filter(a => { const k = a.uid + '|' + a.session + '|' + a.stage + '|' + a.missionId; if (seen.has(k)) return false; seen.add(k); return true; });
+  }
+  const cat = new Map(), lab = new Map();
+  const add = (map, k, miss) => { const v = map.get(k) || { need: 0, miss: 0 }; v.need += 1; if (miss) v.miss += 1; map.set(k, v); };
+  checks.forEach(a => {
+    const perCat = new Map();
+    byMission.get(a.missionId).criteria.forEach((c, i) => {
+      const miss = !a.matches[i];
+      add(lab, c.label, miss);
+      const k = c.label.split(' · ')[0];
+      perCat.set(k, (perCat.get(k) || false) || miss);
+    });
+    perCat.forEach((miss, k) => add(cat, k, miss));
+  });
+  const rows = map => [...map].map(([k, v]) => ({ k, ...v, rate: v.miss / v.need }))
+    .sort((a, b) => ((b.need >= MIN_SAMPLE) - (a.need >= MIN_SAMPLE)) || (b.rate - a.rate) || (b.need - a.need));
+  return { checks: checks.length, cats: rows(cat), labels: rows(lab) };
+}
+
 function drawInsights() {
+  drawExamples();
   const box = $('#missed'); if (!box) return;
-  const checks = attempts.filter(a => a.type === '점검');
-  if (!checks.length) { box.innerHTML = '<p class="muted">아직 점검 기록이 없어요.</p>'; return; }
-  const byCat = new Map(), byLabel = new Map();
-  checks.forEach(a => (a.missed || []).forEach(label => {
-    const cat = String(label).split(' · ')[0];
-    byCat.set(cat, (byCat.get(cat) || 0) + 1);
-    byLabel.set(label, (byLabel.get(label) || 0) + 1);
-  }));
-  const cats = [...byCat].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const labels = [...byLabel].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const max = Math.max(1, ...cats.map(c => c[1]));
-  box.innerHTML = `<div class="missed-grid">
-    <div><h3>종류별</h3>${cats.map(([k, v]) => `<div class="mbar"><span class="mlabel">${esc(k)}</span><span class="mtrack"><span style="width:${(v / max) * 100}%"></span></span><b>${v}</b></div>`).join('') || '<p class="muted">없음</p>'}</div>
-    <div><h3>표현별 상위</h3><ol class="mlist">${labels.map(([k, v]) => `<li>${esc(k)} <b>${v}번</b></li>`).join('') || '<li class="muted">없음</li>'}</ol></div>
-  </div><p class="muted tiny">점검 ${checks.length}번 기준</p>`;
+  const { checks, cats, labels } = missedStats();
+  if (!checks) { box.innerHTML = '<p class="muted">아직 점검 기록이 없어요.</p>'; return; }
+  const pct = r => Math.round(r * 100);
+  const points = cats.filter(c => c.need >= MIN_SAMPLE && c.rate >= 0.3).slice(0, 3);
+  box.innerHTML = `
+    ${points.length ? `<div class="teach-points">${points.map(c => `
+      <div class="tp"><b class="tp-rate">${pct(c.rate)}%</b><div><b>${esc(c.k)} 표현을 놓쳤어요</b> <small class="muted">(${c.miss}/${c.need}번)</small>
+        <p>💡 ${esc(window.CATEGORY_TIPS[c.k] || `“${c.k}” 표현을 넣은 예시 문장을 함께 만들어 봐요.`)}</p></div></div>`).join('')}</div>`
+      : '<p class="muted">놓친 비율이 30% 넘는 표현이 아직 없어요. 잘하고 있어요! 👏</p>'}
+    <div class="missed-grid">
+      <div><h3>종류별 놓친 비율</h3>${cats.slice(0, 10).map(c => `<div class="mbar ${c.need < MIN_SAMPLE ? 'few' : ''}" title="${c.miss}/${c.need}번"><span class="mlabel">${esc(c.k)}</span><span class="mtrack"><span style="width:${pct(c.rate)}%"></span></span><b>${pct(c.rate)}%</b></div>`).join('')}</div>
+      <div><h3>표현별 놓친 비율</h3><ol class="mlist">${labels.slice(0, 8).map(c => `<li class="${c.need < MIN_SAMPLE ? 'few' : ''}">${esc(c.k)} <b>${pct(c.rate)}%</b> <small class="muted">${c.miss}/${c.need}</small></li>`).join('')}</ol></div>
+    </div>
+    <p class="muted tiny">점검 ${checks}번 기준 · 흐리게 보이는 줄은 표본이 ${MIN_SAMPLE}번보다 적어요.</p>`;
 }
 
 /* ───────── 학생 자세히 보기 ───────── */
@@ -429,7 +697,7 @@ function drawDetail() {
   const sums = stageSummaries(list);
   $('#detailBody').innerHTML = `
     <div class="detail-top"><div id="detailHead"></div>
-      <div class="t-row"><button class="outline compact" id="printOne" type="button">인쇄 / PDF</button><button class="dialog-close" type="button" id="closeDetail" aria-label="닫기">✕</button></div></div>
+      <div class="t-row"><button class="outline compact" id="printOne" type="button">인쇄 / PDF</button><button class="text-button danger-text" id="deleteOne" type="button">기록 지우기</button><button class="dialog-close" type="button" id="closeDetail" aria-label="닫기">✕</button></div></div>
     ${s.currentDraft && s.view === 'game' ? `<div class="live-draft"><small>지금 쓰고 있는 문장</small><p>${esc(s.currentDraft)}</p></div>` : ''}
     <h3>단계별 처음 → 마지막</h3>
     ${sums.length ? sums.map(ses => `
@@ -441,6 +709,7 @@ function drawDetail() {
               <small>${g.passed ? '✅ 통과' : '⏳ 진행 중'} · 점검 ${g.tries}번${g.hint ? ' · 💡힌트' : ''}</small></div></div>
             <div class="cmp-row"><small>처음 (${g.first.percent}%)</small><p class="first">${esc(g.first.prompt)}</p></div>
             ${g.tries > 1 ? `<div class="cmp-row"><small>마지막 (${g.last.percent}%)</small><p class="final">${esc(g.last.prompt)}</p></div>` : ''}
+            ${g.last.pass ? `<button type="button" class="text-button" data-ex="${esc(g.last.id)}">★ 예시로 크게 띄우기</button>` : ''}
           </article>`).join('')}</div>
       </div>`).join('') : '<p class="muted">아직 점검한 기록이 없어요.</p>'}
     <h3>시간순 기록 <small class="muted">(${list.length}개)</small></h3>
@@ -450,10 +719,17 @@ function drawDetail() {
           ${a.type === '점검' ? ` · ${a.count}/${a.total} (${a.percent}%)${a.pass ? ' ✓통과' : ''}` : ''}${a.hintUsed ? ' · 💡' : ''}</div>
         <p>${esc(a.prompt)}</p>
         ${a.type === '점검' && a.missed && a.missed.length ? `<small class="missed-tags">놓친 표현: ${a.missed.map(esc).join(', ')}</small>` : ''}
+        ${a.type === '점검' ? ` <button type="button" class="text-button tiny" data-ex="${esc(a.id)}">★ 예시로 띄우기</button>` : ''}
       </li>`).join('') || '<li class="muted">기록이 없어요.</li>'}</ol>`;
   drawDetailHeader();
   $('#closeDetail').onclick = () => $('#detailDialog').close();
   $('#printOne').onclick = () => { $('#detailDialog').close(); printStudents([s]); };
+  $('#deleteOne').onclick = () => confirmDanger('student', s.id);
+  $('#detailBody').querySelectorAll('[data-ex]').forEach(b => (b.onclick = () => {
+    const a = attempts.find(x => x.id === b.dataset.ex);
+    $('#detailDialog').close();
+    openShowcase(a);
+  }));
 }
 
 /* ───────── 내려받기 ───────── */
@@ -572,6 +848,20 @@ function route() {
 }
 
 /* 미리보기: teacher.html?demo — 로그인 없이 가짜 학생 데이터로 대시보드를 보여 줘요 */
+const DEMO_ANSWERS = {
+  e1a: '노란 우산이 펼쳐져 있고 아래에 구부러진 갈색 손잡이가 있어요.',
+  e2a: '하얀 탁자 위에 파란 컵 세 개가 나란히 한 줄로 놓여 있어요.',
+  e3a: '주황색 물고기 한 마리가 파란 바다 속에서 헤엄치고 있어요.',
+  e4a: '파란 하늘 앞 가운데에 노란 해바라기가 크게 있고 정면에서 본 모습이에요.',
+  m1a: '왼쪽에 빨간 사과, 오른쪽에 노란 바나나가 있어요.',
+  m2a: '큰 갈색 상자 위에 작은 빨간 공이 올려져 있어요.',
+  m3a: '노을이 지는 바다 위를 하얀 돛단배가 떠가고 있어요.',
+  m4a: '아래에서 올려다본 높은 건물들 사이로 파란 하늘이 보여요.',
+  h1a: '투명한 유리병 안에 반짝이는 파란 구슬이 가득 들어 있어요.',
+  h2a: '상자 다섯 개가 두 줄로 있는데 앞줄에 작은 노란 상자 세 개, 뒷줄에 큰 파란 상자 두 개가 있어요.',
+  h3a: '빗방울이 웅덩이에 떨어져서 동그란 물결이 퍼지고 물에 하늘이 비쳐요.',
+  h4a: '가까이 있는 빨간 튤립 꽃은 선명하고 뒤 배경은 흐릿해요.',
+};
 function startDemo() {
   const names = ['하늘', '도윤', '서아', '지호', '민준', '하린', '시우', '예린', '준서', '수아', '은우', '지안'];
   const lvKeys = ['easy', 'easy', 'easy', 'medium', 'medium', 'hard'];
@@ -590,12 +880,13 @@ function startDemo() {
       const m = pool.find(x => x.stage === st);
       const tries = st === stage && i % 3 === 0 ? 3 : 2;
       for (let k = 1; k <= tries; k++) {
-        const pass = (st < stage || finished) && k === tries;
-        const count = pass ? m.criteria.length : Math.max(1, m.criteria.length - 2 - (k === 1 ? 1 : 0));
-        const missed = m.criteria.slice(count).map(c => c.label);
-        attempts.push({ uid, number: i + 1, nickname: nick, session, difficulty, stage: st, missionId: m.id, mission: m.title,
-          prompt: k === 1 ? `${m.title.split(' ').pop()}이 있어요.` : `${m.title}이(가) 보여요. ${pass ? '색과 위치도 자세히 썼어요.' : '조금 더 써 볼게요.'}`,
-          count, total: m.criteria.length, percent: Math.round(count / m.criteria.length * 100), pass, missed,
+        const willPass = (st < stage || finished) && k === tries;
+        const keyword = m.criteria[0].label.split(' · ').pop();
+        const prompt = willPass ? DEMO_ANSWERS[m.id] : k === 1 ? `${keyword}이(가) 있어요.` : `${m.title}이(가) 보여요.`;
+        const r = evaluatePrompt(prompt, m, 0.8);
+        attempts.push({ id: 'demo-a' + attempts.length, uid, number: i + 1, nickname: nick, session, difficulty, stage: st, missionId: m.id, mission: m.title,
+          prompt, matches: r.matches, count: r.count, total: r.total, percent: r.percent, pass: r.pass,
+          missed: m.criteria.filter((c, n) => !r.matches[n]).map(c => c.label),
           hintUsed: i % 4 === 1 && st === stage, tryNo: k, type: '점검', time: new Date(t += 70000).toISOString() });
       }
     }
@@ -611,7 +902,8 @@ function startDemo() {
   if (students[11]) { students[11].difficulty = null; students[11].passed = null; }
   if (students[5]) { students[5].passed[students[5].stage - 1] = true; students[5].latestPass = true; students[5].latestPercent = 100; } // "통과" 예시
   attempts.sort((a, b) => ms(a.time) - ms(b.time));
-  cls = { code: 'DEMO42', name: '미리보기 학급', open: true };
+  cls = { code: 'DEMO42', name: '미리보기 학급', open: true, settings: { passRatio: 0.8 } };
+  demo = true;
   $('#teacherName').textContent = '미리보기 모드'; $('#teacherName').hidden = false;
   renderShell();
   $('#openToggle').disabled = true;

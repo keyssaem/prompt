@@ -35,6 +35,53 @@ window.LEVELS = {
   },
 };
 
+/* 문장 속 핵심 표현에 형광펜 표시 (좋은 예시 보여 주기에서 사용) */
+window.highlightPrompt = function (prompt, mission) {
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const text = String(prompt || '');
+  if (!mission) return esc(text);
+  const marks = [];
+  mission.criteria.forEach(c => {
+    for (const m of text.matchAll(new RegExp(c.pattern, 'gu'))) if (m[0].length) marks.push([m.index, m.index + m[0].length, c.label]);
+  });
+  marks.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
+  let html = '', pos = 0;
+  for (const [s, e, label] of marks) {
+    if (s < pos) continue;
+    html += esc(text.slice(pos, s)) + `<mark title="${esc(label)}">${esc(text.slice(s, e))}</mark>`;
+    pos = e;
+  }
+  return html + esc(text.slice(pos));
+};
+
+/* 표현 종류(라벨 앞부분)별 교수 포인트 — 교사 화면 수업 분석에서 사용 */
+window.CATEGORY_TIPS = {
+  '대상': '주인공 이름부터 쓰기: “무엇이 보이나요?”를 먼저 말해 보게 해요.',
+  '색': '색 이름 말하기 놀이: 그림 속 색을 하나씩 짚으며 말해 봐요.',
+  '특징': '눈에 띄는 작은 부분(손잡이, 잎, 줄 등) 찾기를 함께 해 봐요.',
+  '개수': '손가락으로 세며 “몇 개”를 꼭 넣도록 안내해요.',
+  '배치': '“나란히, 쌓여, 한 줄로” 같은 놓인 모양 낱말을 모아 봐요.',
+  '배경': '주인공 뒤와 아래에 무엇이 있는지 묻는 질문을 해 봐요.',
+  '행동': '“무엇을 하고 있나요?” 질문으로 움직임 낱말을 끌어내요.',
+  '위치': '왼쪽·오른쪽·가운데·위·아래 위치 낱말을 칠판에 정리해 봐요.',
+  '크기': '“크게/작게, 더 큰” 비교 표현을 연습해요.',
+  '크기 관계': '두 대상의 크기를 비교하는 문장을 함께 만들어 봐요.',
+  '시점': '어디서 바라본 그림인지(위에서·앞에서) 몸으로 따라 해 봐요.',
+  '각도': '올려다보기·내려다보기를 직접 해 보고 말로 표현해요.',
+  '거리': '가까이·멀리 표현을 사진 예시로 비교해 봐요.',
+  '빛': '시간과 빛(노을, 햇빛) 단서를 찾는 활동을 해 봐요.',
+  '날씨': '날씨를 알려 주는 단서(빗방울, 구름)를 찾아봐요.',
+  '재질': '“무엇으로 만들었을까?” 재질 낱말(유리·나무·천)을 모아요.',
+  '질감': '만졌을 때 느낌(반짝, 매끈) 낱말을 함께 찾아봐요.',
+  '무늬': '무늬 이름(체크, 줄무늬, 물방울)을 정리해 봐요.',
+  '전체 수': '전체를 먼저 세고, 묶음별로 나누어 말하게 해요.',
+  '배열': '줄·층·모양으로 배열을 설명하는 틀을 보여 줘요.',
+  '앞과 뒤': '앞에 있는 것과 뒤에 있는 것을 나누어 말해 봐요.',
+  '초점': '선명한 곳과 흐린 곳을 구분하는 사진 비교를 해 봐요.',
+  '흐림': '선명한 곳과 흐린 곳을 구분하는 사진 비교를 해 봐요.',
+  '여백': '비어 있는 공간도 그림의 일부라는 점을 짚어 줘요.',
+};
+
 /* 핵심 표현 점검: 대상 표현은 모두 + 전체의 passRatio 이상 */
 window.evaluatePrompt = function (prompt, mission, passRatio) {
   const ratio = typeof passRatio === 'number' ? passRatio : 0.8;
