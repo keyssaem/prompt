@@ -75,7 +75,7 @@ function updateHeader() {
   $('#whoami').hidden = !p;
   $('#historyButton').hidden = !p;
   $('#leaveButton').hidden = !p;
-  if (p) $('#whoami').textContent = (Store.mode === 'cloud' ? (Store.className || p.classCode) + ' · ' : '') + p.number + '번 ' + p.nickname;
+  if (p) $('#whoami').textContent = (Store.mode === 'cloud' ? (Store.className || p.classCode) + ' · ' : '') + (p.number ? p.number + '번 ' : '') + p.nickname;
   const net = $('#netBadge');
   net.hidden = false;
   if (Store.mode === 'cloud') {
@@ -96,34 +96,44 @@ function goHome() {
 }
 
 /* ───────── 참여 화면 ───────── */
+let joinTab = 'class'; // 'class' = 우리 반과 함께(학급 코드) · 'solo' = 혼자 연습(코드 없이)
+
 function renderJoin() {
-  const cloud = Store.mode === 'cloud';
+  const cloud = Store.cloudAvailable;
+  const solo = !cloud || joinTab === 'solo';
   const nums = Array.from({ length: 40 }, (_, i) => `<option value="${i + 1}">${i + 1}번</option>`).join('');
   APP.innerHTML = `
   <section class="join-card">
     <span class="eyebrow">한국어로 배우는 이미지 프롬프트</span>
     <h1>자세히 보고,<br><em>내 말로 그려 봐.</em></h1>
-    <p class="muted">${cloud ? '선생님이 알려 준 학급 코드와 내 번호, 별명을 입력하세요.' : '번호와 별명을 입력하면 시작할 수 있어요. 기록은 이 기기에만 저장돼요.'}</p>
+    ${cloud ? `
+    <div class="join-tabs" role="tablist" aria-label="참여 방법">
+      <button type="button" role="tab" data-tab="class" aria-selected="${!solo}" class="${solo ? '' : 'on'}">🏫 우리 반과 함께</button>
+      <button type="button" role="tab" data-tab="solo" aria-selected="${solo}" class="${solo ? 'on' : ''}">🙋 혼자 연습하기</button>
+    </div>` : ''}
+    <p class="muted">${solo ? '학급 코드 없이 바로 연습해요. 기록은 이 기기에만 저장되고, 선생님 화면에는 보이지 않아요.' : '선생님이 알려 준 학급 코드와 내 번호, 별명을 입력하세요.'}</p>
     <form id="joinForm" class="join-form" autocomplete="off">
-      ${cloud ? `<label>학급 코드<input id="classCode" name="classCode" required maxlength="8" placeholder="예: AB12CD" inputmode="latin" autocapitalize="characters" value="${esc(URL_CODE)}"></label>` : ''}
-      <label>번호<select id="number" required><option value="">선택</option>${nums}</select></label>
+      ${solo ? '' : `<label>학급 코드<input id="classCode" name="classCode" required maxlength="8" placeholder="예: AB12CD" inputmode="latin" autocapitalize="characters" value="${esc(URL_CODE)}"></label>`}
+      <label>번호${solo ? ' <small class="muted">(선택)</small>' : ''}<select id="number" ${solo ? '' : 'required'}><option value="">${solo ? '없음' : '선택'}</option>${nums}</select></label>
       <label>별명<input id="nickname" required maxlength="10" placeholder="10글자 이하"></label>
       <p class="form-error" id="joinError" role="alert"></p>
-      <button class="primary full" id="joinButton">시작하기 →</button>
+      <button class="primary full" id="joinButton">${solo ? '혼자 연습 시작하기 →' : '우리 반 참여하기 →'}</button>
     </form>
     <p class="tiny muted">실명 대신 별명을 써도 괜찮아요.</p>
+    ${cloud ? `<a class="teacher-login" href="teacher.html">🔑 선생님(관리자) 로그인 <span>Google 계정으로 학급 대시보드 열기 →</span></a>` : ''}
   </section>`;
-  if (cloud && URL_CODE) $('#number').focus(); // QR로 들어오면 코드는 채워져 있으니 번호부터
+  APP.querySelectorAll('[data-tab]').forEach(b => (b.onclick = () => { joinTab = b.dataset.tab; renderJoin(); }));
+  if (!solo && URL_CODE) $('#number').focus(); // QR로 들어오면 코드는 채워져 있으니 번호부터
   $('#joinForm').onsubmit = async e => {
     e.preventDefault();
-    const number = Number($('#number').value);
+    const number = Number($('#number').value) || 0;
     const nickname = $('#nickname').value.replace(/\s+/g, ' ').trim();
     const err = $('#joinError');
-    if (!number) return (err.textContent = '번호를 골라 주세요.');
+    if (!solo && !number) return (err.textContent = '번호를 골라 주세요.');
     if (!nickname) return (err.textContent = '별명을 입력해 주세요.');
     const btn = $('#joinButton'); btn.disabled = true; btn.textContent = '확인하는 중…';
     try {
-      await Store.join({ classCode: cloud ? $('#classCode').value : '', number, nickname });
+      await Store.join({ classCode: solo ? '' : $('#classCode').value, number, nickname, solo });
       load();
       view = 'lobby';
       render();
@@ -133,7 +143,7 @@ function renderJoin() {
       const msg = { BAD_CODE: '학급 코드를 다시 확인해 주세요. (영문·숫자 4~8자리)', NO_CLASS: '그런 학급 코드가 없어요. 선생님께 다시 확인해 주세요.', CLOSED: '지금은 이 학급에 참여할 수 없어요.', NETWORK: '인터넷 연결을 확인해 주세요.' }[ex.message];
       err.textContent = msg || '참여하지 못했어요. 잠시 뒤 다시 시도해 주세요.';
       console.warn(ex);
-      btn.disabled = false; btn.textContent = '시작하기 →';
+      btn.disabled = false; btn.textContent = solo ? '혼자 연습 시작하기 →' : '우리 반 참여하기 →';
     }
   };
 }
@@ -418,11 +428,11 @@ function showRecords() {
 function download(records) {
   if (!records.length) return toast('아직 내려받을 기록이 없어요.');
   const p = Store.profile;
-  const head = `보이는 걸 말해 봐 — ${p.number}번 ${p.nickname}의 프롬프트 연습 기록\n핵심 표현을 찾아 확인한 기록이에요. (AI 이미지 유사도 점수가 아니에요)\n\n`;
+  const head = `보이는 걸 말해 봐 — ${p.number ? p.number + "번 " : ""}${p.nickname}의 프롬프트 연습 기록\n핵심 표현을 찾아 확인한 기록이에요. (AI 이미지 유사도 점수가 아니에요)\n\n`;
   const body = records.map(x => `${new Date(x.time).toLocaleString('ko-KR')} · ${x.type}\n${LEVELS[x.difficulty]?.name} · ${x.stage}단계 · ${x.mission}\n${x.prompt}\n핵심 표현 ${x.count}/${x.total}${x.pass ? ' · 통과' : ''}${x.hintUsed ? ' · 힌트 사용' : ''}`).join('\n\n────────────\n\n');
   const url = URL.createObjectURL(new Blob(['﻿', head + body], { type: 'text/plain;charset=utf-8' }));
   const a = document.createElement('a');
-  a.href = url; a.download = `보이는걸말해봐_${p.number}번_${p.nickname}.txt`;
+  a.href = url; a.download = `보이는걸말해봐_${p.number ? p.number + "번_" : ""}${p.nickname}.txt`;
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

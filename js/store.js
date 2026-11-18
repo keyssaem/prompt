@@ -48,13 +48,14 @@ window.Store = (() => {
     s.src = src; s.onload = ok; s.onerror = () => no(new Error('SDK_LOAD'));
     document.head.append(s);
   });
-  const readProfile = () => { try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY)); return p && p.number && p.nickname ? p : null; } catch { return null; } };
+  const readProfile = () => { try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY)); return p && p.nickname && (p.number || p.solo || p.mode === 'local') ? p : null; /* 혼자 연습은 번호 없이도 OK */ } catch { return null; } };
   const writeProfile = p => { try { p ? localStorage.setItem(PROFILE_KEY, JSON.stringify(p)) : localStorage.removeItem(PROFILE_KEY); } catch { /* 저장 불가 */ } };
   const ts = () => firebase.firestore.FieldValue.serverTimestamp();
   const inc = n => firebase.firestore.FieldValue.increment(n);
   const classRef = code => db.collection('classes').doc(code);
   const studentRef = () => classRef(profile.classCode).collection('students').doc(uid);
   const base = () => ({ uid, number: profile.number, nickname: profile.nickname });
+  const live = () => mode === 'cloud' && !!profile && !profile.solo; // 학급 서버로 기록을 보내는 중인가
 
   function fail(err) {
     console.warn('[Store]', err);
@@ -90,8 +91,8 @@ window.Store = (() => {
         warning = '학급 서버에 연결하지 못해 혼자 연습 모드로 열렸어요. 인터넷 연결을 확인해 주세요.';
       }
     }
-    if (profile && profile.mode !== mode) { profile = null; writeProfile(null); }
-    if (profile && mode === 'cloud') {
+    if (profile && !profile.solo && profile.mode !== mode) { profile = null; writeProfile(null); }
+    if (profile && !profile.solo && mode === 'cloud') {
       try { classInfo = await fetchClass(profile.classCode); } catch (e) { console.warn(e); }
       if (!classInfo) { profile = null; writeProfile(null); }
       else { profile.uid = uid; writeProfile(profile); startBeat(); watchClass(); status({ online: true }); }
@@ -102,9 +103,9 @@ window.Store = (() => {
   }
 
   /* 학생 참여: 학급 코드 확인 → 학생 문서 만들기 */
-  async function join({ classCode, number, nickname }) {
-    if (mode === 'local') {
-      profile = { mode, classCode: 'LOCAL', number, nickname };
+  async function join({ classCode, number, nickname, solo }) {
+    if (mode === 'local' || solo) { // 학급 코드 없이 혼자 연습: 이 기기에만 저장
+      profile = { mode: 'local', solo: mode === 'cloud', classCode: 'LOCAL', number, nickname };
       writeProfile(profile);
       return profile;
     }
@@ -124,7 +125,7 @@ window.Store = (() => {
   }
 
   function leave() {
-    if (mode === 'cloud' && profile) { flushDraft(); status({ online: false }); }
+    if (live()) { flushDraft(); status({ online: false }); }
     stopBeat();
     if (unwatchClass) { unwatchClass(); unwatchClass = null; }
     profile = null; classInfo = null;
@@ -133,7 +134,7 @@ window.Store = (() => {
 
   /* 학생 상태(요약) 덮어쓰기 — 교사 화면 격자가 이 값을 실시간으로 봐요 */
   function status(partial) {
-    if (mode !== 'cloud' || !profile) return;
+    if (!live()) return;
     const data = { ...base(), ...partial, lastActive: ts() };
     // lastInputAt: 'now' → 서버 시각 (교사 화면의 "2분째 입력 없음" 판단에 사용)
     if (data.lastInputAt === 'now') data.lastInputAt = ts();
@@ -142,7 +143,7 @@ window.Store = (() => {
 
   /* 쓰는 중인 글: 너무 자주 보내지 않도록 모아서 보내요 */
   function draft(text, meta) {
-    if (mode !== 'cloud' || !profile) return;
+    if (!live()) return;
     pendingDraft = { currentDraft: String(text).slice(0, 1000), ...meta, lastInputAt: 'now' };
     const wait = DRAFT_INTERVAL - (Date.now() - lastDraftAt);
     if (wait <= 0) flushDraft();
@@ -158,7 +159,7 @@ window.Store = (() => {
 
   /* 점검 1회 기록 + 요약 갱신 */
   function attempt(rec, summary) {
-    if (mode !== 'cloud' || !profile) return;
+    if (!live()) return;
     flushDraft();
     classRef(profile.classCode).collection('attempts')
       .add({ ...rec, ...base(), classCode: profile.classCode, createdAt: ts() })
@@ -167,7 +168,7 @@ window.Store = (() => {
   }
 
   function complete(summary) {
-    if (mode !== 'cloud' || !profile) return;
+    if (!live()) return;
     status({ ...summary, completedCount: inc(1) });
   }
 
@@ -188,7 +189,8 @@ window.Store = (() => {
   return {
     init, join, leave, status, draft, flushDraft, attempt, complete,
     on: (name, fn) => { handlers[name] = fn; },
-    get mode() { return mode; },
+    get mode() { return profile && profile.solo ? 'local' : mode; }, // 혼자 연습을 고르면 학급 서버로 보내지 않아요
+    get cloudAvailable() { return mode === 'cloud'; },
     get profile() { return profile; },
     get passRatio() { return settings().passRatio; },
     get settings() { return settings(); },
