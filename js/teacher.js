@@ -389,7 +389,7 @@ function drawDetail() {
   $('#detailBody').innerHTML = `
     <div class="detail-top"><div id="detailHead"></div>
       <div class="t-row"><button class="outline compact" id="printOne" type="button">인쇄 / PDF</button><button class="dialog-close" type="button" id="closeDetail" aria-label="닫기">✕</button></div></div>
-    ${s.currentDraft ? `<div class="live-draft"><small>지금 쓰고 있는 문장</small><p>${esc(s.currentDraft)}</p></div>` : ''}
+    ${s.currentDraft && s.view === 'game' ? `<div class="live-draft"><small>지금 쓰고 있는 문장</small><p>${esc(s.currentDraft)}</p></div>` : ''}
     <h3>단계별 처음 → 마지막</h3>
     ${sums.length ? sums.map(ses => `
       <div class="ses">
