@@ -111,13 +111,16 @@ window.Store = (() => {
   /* 학생 상태(요약) 덮어쓰기 — 교사 화면 격자가 이 값을 실시간으로 봐요 */
   function status(partial) {
     if (mode !== 'cloud' || !profile) return;
-    studentRef().set({ ...base(), ...partial, lastActive: ts() }, { merge: true }).catch(fail);
+    const data = { ...base(), ...partial, lastActive: ts() };
+    // lastInputAt: 'now' → 서버 시각 (교사 화면의 "2분째 입력 없음" 판단에 사용)
+    if (data.lastInputAt === 'now') data.lastInputAt = ts();
+    studentRef().set(data, { merge: true }).catch(fail);
   }
 
   /* 쓰는 중인 글: 너무 자주 보내지 않도록 모아서 보내요 */
   function draft(text, meta) {
     if (mode !== 'cloud' || !profile) return;
-    pendingDraft = { currentDraft: String(text).slice(0, 1000), ...meta };
+    pendingDraft = { currentDraft: String(text).slice(0, 1000), ...meta, lastInputAt: 'now' };
     const wait = DRAFT_INTERVAL - (Date.now() - lastDraftAt);
     if (wait <= 0) flushDraft();
     else if (!draftTimer) draftTimer = setTimeout(flushDraft, wait);

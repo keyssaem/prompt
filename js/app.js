@@ -53,7 +53,8 @@ function liveStatus(extra = {}) {
   if (!s) return { view, ...extra };
   return {
     view, difficulty: s.difficulty, stage: s.current + 1, missionId: s.ids[s.current],
-    passed: s.passed, hintUsed: s.hints, sessionStartedAt: s.startedAt, finished: !!s.finishedAt, ...extra,
+    passed: s.passed, hintUsed: s.hints, sessionStartedAt: s.startedAt, finished: !!s.finishedAt,
+    failStreak: (s.streak || [])[s.current] || 0, ...extra,
   };
 }
 
@@ -182,11 +183,11 @@ function start(difficulty) {
     current: 0,
     drafts: ['', '', '', ''], first: ['', '', '', ''],
     reviews: [null, null, null, null], passed: [false, false, false, false], hints: [false, false, false, false],
-    tries: [0, 0, 0, 0],
+    tries: [0, 0, 0, 0], streak: [0, 0, 0, 0],
     startedAt: new Date().toISOString(), finishedAt: null,
   };
   view = 'game'; save(); render(); scrollTop();
-  Store.status(liveStatus({ currentDraft: '', latestPercent: null, latestPass: false }));
+  Store.status(liveStatus({ currentDraft: '', latestPercent: null, latestPass: false, lastInputAt: 'now' }));
 }
 
 /* ───────── 도전 화면 ───────── */
@@ -228,7 +229,8 @@ function renderGame() {
     const n = Number(b.dataset.stage);
     if (n === s.current) return;
     logDraft('단계 이동 전');
-    s.current = n; save(); renderGame(); Store.status(liveStatus({ currentDraft: s.drafts[n] }));
+    s.current = n; save(); renderGame();
+    Store.status(liveStatus({ currentDraft: s.drafts[n], latestPercent: s.reviews[n] ? s.reviews[n].percent : null, latestPass: !!s.passed[n], lastInputAt: 'now' }));
   }));
   $('#enlarge').onclick = () => { $('#zoomImage').src = $('#missionImage').src; $('#imageDialog').showModal(); };
   $('#reroll').onclick = reroll;
@@ -260,8 +262,9 @@ function reroll() {
   if (s.drafts[i].trim()) { logDraft('그림 바꾸기 전'); toast('쓴 내용은 기록에 남기고 새 그림을 보여 줄게요.'); }
   s.ids[i] = pickImage(s.difficulty, i + 1, s.ids[i]);
   s.drafts[i] = ''; s.first[i] = ''; s.reviews[i] = null; s.passed[i] = false; s.hints[i] = false; s.tries[i] = 0;
+  if (s.streak) s.streak[i] = 0;
   save(); renderGame();
-  Store.status(liveStatus({ currentDraft: '', latestPercent: null, latestPass: false }));
+  Store.status(liveStatus({ currentDraft: '', latestPercent: null, latestPass: false, lastInputAt: 'now' }));
 }
 
 function makeRecord(text, result, type) {
@@ -287,10 +290,12 @@ function check() {
   if (!s.first[i]) s.first[i] = text;
   s.reviews[i] = result;
   if (result.pass) s.passed[i] = true;
+  if (!s.streak) s.streak = [0, 0, 0, 0];
+  s.streak[i] = result.pass ? 0 : s.streak[i] + 1; // 연속 미통과 횟수 → 교사 화면 "막힘" 표시
   const rec = makeRecord(text, result, '점검');
   state.history.push(rec);
   save();
-  Store.attempt(rec, liveStatus({ currentDraft: text, latestPercent: result.percent, latestPass: result.pass, lastPrompt: text }));
+  Store.attempt(rec, liveStatus({ currentDraft: text, latestPercent: result.percent, latestPass: result.pass, lastPrompt: text, lastInputAt: 'now' }));
   renderFeedback(result);
   $('.text-meta span').textContent = '점검 ' + s.tries[i] + '번 했어요';
   if (result.pass) {
@@ -313,7 +318,7 @@ function renderFeedback(r) {
   </div>`;
   const next = $('#next');
   if (next) next.onclick = () => {
-    if (s.current < 3) { s.current += 1; save(); renderGame(); scrollTop(); Store.status(liveStatus({ currentDraft: s.drafts[s.current], latestPercent: null, latestPass: false })); }
+    if (s.current < 3) { s.current += 1; save(); renderGame(); scrollTop(); Store.status(liveStatus({ currentDraft: s.drafts[s.current], latestPercent: null, latestPass: false, lastInputAt: 'now' })); }
     else complete();
   };
 }
