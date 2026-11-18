@@ -5,6 +5,10 @@
 - 학생 화면: `https://keyssaem.github.io/prompt/`
 - 교사 화면: `https://keyssaem.github.io/prompt/teacher.html` (미리보기: `teacher.html?demo`)
 - **교사용 사용 설명서: [`guide.html`](guide.html)** ← 수업에서 쓰는 방법은 여기에 모두 있어요.
+- **6학년 활동지(A4 2쪽): [`worksheet.html`](worksheet.html)**, 인쇄용 [`활동지_보이는걸말해봐_6학년.pdf`](활동지_보이는걸말해봐_6학년.pdf)
+  - 앞장: 웹앱 미션 그림을 보고 처음 쓰기 → 스스로 점검 → 고쳐 쓰기, 웹앱 도전 기록
+  - 뒷장: 웹앱 규칙을 분석해 교육용 게임을 설계하고, 빈칸 공식으로 바이브코딩 프롬프트 완성
+  - 교사 화면의 🖨 활동지로 열면 QR에 학급 코드가 들어가요. (`worksheet.html?code=학급코드`)
 
 ## 기능
 | 단계 | 기능 |

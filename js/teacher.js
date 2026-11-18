@@ -274,6 +274,7 @@ function renderShell() {
   $('#closeQr').onclick = () => qd.close();
   qd.addEventListener('click', e => { if (e.target === qd) qd.close(); });
   $('#qrUrl').textContent = joinUrl(cls.code);
+  const wl = $('#worksheetLink'); if (wl) wl.href = 'worksheet.html?code=' + encodeURIComponent(cls.code); // 활동지 QR에 이 학급 코드 넣기
   $('#copyLink').onclick = () => navigator.clipboard.writeText(joinUrl(cls.code))
     .then(() => toast('참여 주소를 복사했어요.')).catch(() => toast('복사하지 못했어요. 주소를 직접 선택해 주세요.'));
   drawQr();

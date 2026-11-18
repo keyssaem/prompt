@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>활동지 · 보이는 걸 말해 봐 (6학년)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* A4 두 쪽 활동지 — 화면에서는 종이처럼, 인쇄하면 정확히 A4 2장 */
+    :root {
+      --ink: #1f2430; --muted: #5d6475; --line: #c9cfdb;
+      --orange: #ff6b35; --orange-soft: #fff0e8;
+      --blue: #2f7de1; --blue-soft: #eaf2fd;
+      --green: #2e9e5b; --green-soft: #e8f6ee;
+      --purple: #7c4dde; --purple-soft: #f1ecfe;
+      --yellow: #ffd23f; --yellow-soft: #fff8db;
+      --red: #e5484d;
+    }
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { background: #8a8f99; color: var(--ink); font-family: "Noto Sans KR", "Malgun Gothic", sans-serif; font-size: 10pt; line-height: 1.45; word-break: keep-all; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { width: 210mm; height: 297mm; margin: 10mm auto; padding: 8mm 10mm 7mm; background: #fff; overflow: hidden; position: relative; display: flex; flex-direction: column; gap: 2.6mm; box-shadow: 0 4px 24px rgba(0,0,0,.25); }
+    @media print { body { background: #fff; } .page { margin: 0; box-shadow: none; page-break-after: always; break-after: page; } .page:last-child { page-break-after: auto; break-after: auto; } .no-print { display: none !important; } }
+    h1, h2, h3, .jua { font-family: "Jua", "Noto Sans KR", sans-serif; font-weight: 400; margin: 0; line-height: 1.2; }
+    p { margin: 0; }
+    .muted { color: var(--muted); }
+    .small { font-size: 9pt; }
+    .tiny { font-size: 8pt; }
+
+    /* 머리말 */
+    .head { display: grid; grid-template-columns: 1fr 64mm; gap: 4mm; align-items: stretch; }
+    .title-box { position: relative; padding: 1mm 0 0; }
+    .eyebrow { display: inline-block; font-family: "Jua"; font-size: 10.5pt; color: #fff; background: var(--orange); padding: .6mm 3.5mm; border-radius: 99px; }
+    .title { font-size: 31pt; color: var(--ink); margin: 1mm 0 .5mm; letter-spacing: -.5px; }
+    .title em { font-style: normal; color: var(--orange); }
+    .subtitle { font-family: "Jua"; font-size: 12.5pt; color: var(--blue); }
+    .who { border: 2px solid var(--blue); border-radius: 4mm; padding: 2.5mm 3.5mm; display: grid; gap: 2mm; align-content: center; font-weight: 700; }
+    .who .row { display: flex; gap: 2mm; align-items: flex-end; }
+    .who .blank { flex: 1; border-bottom: 1.5px solid var(--ink); height: 5mm; }
+    .who .short { flex: 0 0 9mm; }
+
+    .def { display: grid; grid-template-columns: 1fr 1.25fr; gap: 3mm; background: var(--yellow-soft); border: 1.5px dashed #e3b400; border-radius: 4mm; padding: 2.4mm 4mm; align-items: center; }
+    .def b { color: var(--orange); }
+    .ba { display: grid; gap: .6mm; font-size: 9.5pt; }
+    .ba .before { color: var(--muted); text-decoration: line-through; }
+    .ba .after { font-weight: 700; }
+    .five { display: flex; gap: 1.2mm; flex-wrap: wrap; margin-top: 1mm; }
+    .five span { font-family: "Jua"; font-size: 10pt; background: #fff; border: 1.5px solid var(--orange); color: var(--orange); border-radius: 99px; padding: .1mm 2.6mm; }
+
+    /* 미션 카드 */
+    .mission { border: 2.2px solid var(--c); border-radius: 5mm; padding: 3mm 4mm 3mm; position: relative; display: grid; gap: 2.2mm; }
+    .mission.blue { --c: var(--blue); --soft: var(--blue-soft); }
+    .mission.purple { --c: var(--purple); --soft: var(--purple-soft); }
+    .m-head { display: flex; align-items: center; gap: 2.5mm; }
+    .m-num { font-family: "Jua"; background: var(--c); color: #fff; font-size: 13pt; border-radius: 99px; padding: .4mm 3.6mm; }
+    .m-title { font-size: 14pt; }
+    .m-tag { margin-left: auto; font-size: 8.5pt; font-weight: 700; color: var(--c); background: var(--soft); border-radius: 99px; padding: .4mm 3mm; }
+    .m-body { display: grid; grid-template-columns: 54mm 1fr; gap: 4mm; align-items: start; }
+    .m-img { width: 54mm; height: 40.5mm; border-radius: 3mm; object-fit: cover; border: 1px solid var(--line); display: block; }
+    .write3 { display: grid; grid-template-columns: 1fr 46mm 1fr; gap: 3mm; align-items: start; }
+    .write3 .step-label { margin-bottom: 1mm; white-space: nowrap; }
+    .vchecks { display: grid; grid-template-columns: 1fr 1fr; gap: .9mm 1.2mm; align-items: center; background: var(--soft); border-radius: 3mm; padding: 1.4mm 2mm; font-size: 8.8pt; }
+    .vchecks .step-label, .vchecks .score { grid-column: 1 / -1; margin: 0; }
+    .vchecks .chk { padding: 0 1.6mm 0 1.1mm; white-space: nowrap; }
+    .vchecks .score { font-size: 8.6pt; text-align: right; }
+    .observe { background: var(--soft); border-radius: 3mm; padding: 2.2mm 3.2mm; }
+    .observe h3 { font-size: 11pt; color: var(--c); margin-bottom: .8mm; }
+    .observe ul { margin: 0; padding-left: 4.2mm; display: grid; gap: .3mm; }
+    .helper { margin-top: 1.6mm; font-size: 9.3pt; background: #fff; border-radius: 2.5mm; padding: 1.4mm 2.6mm; border: 1px dashed var(--c); }
+    .helper b { color: var(--c); }
+    .step-label { display: flex; align-items: center; gap: 1.6mm; font-weight: 900; font-size: 9.8pt; }
+    .step-label .dot { width: 5mm; height: 5mm; border-radius: 50%; background: var(--c); color: #fff; display: grid; place-items: center; font-size: 8.5pt; }
+    .step-label small { font-weight: 500; color: var(--muted); }
+    /* 쓰기 줄: PDF로 바꿔도 깨지지 않도록 그라데이션 대신 밑줄 요소로 */
+    .lines i { display: block; height: 7.5mm; border-bottom: .3mm solid #9aa1af; }
+    .checks { display: flex; flex-wrap: wrap; gap: 1.4mm 2.4mm; align-items: center; font-size: 9.6pt; }
+    .chk { display: inline-flex; align-items: center; gap: 1.1mm; border: 1.3px solid var(--line); border-radius: 99px; padding: .2mm 2.6mm .2mm 1.4mm; background: #fff; }
+    .chk i { width: 3.6mm; height: 3.6mm; border: 1.5px solid var(--ink); border-radius: 1mm; display: inline-block; }
+    .chk.key { border-color: var(--red); }
+    .chk.key::after { content: "꼭!"; font-size: 7.5pt; color: var(--red); font-weight: 900; }
+    .score { margin-left: auto; font-weight: 700; }
+    .score u { display: inline-block; width: 7mm; border-bottom: 1.4px solid var(--ink); text-decoration: none; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+
+    /* 아래 띠: 웹앱으로 */
+    .app-strip { margin-top: auto; display: grid; grid-template-columns: 1fr 28mm; gap: 4mm; align-items: center; background: var(--orange-soft); border-radius: 5mm; padding: 2.6mm 4mm; border: 2px solid var(--orange); }
+    .app-strip h2 { font-size: 13pt; color: var(--orange); }
+    .record { display: grid; grid-template-columns: auto 1fr; gap: 1mm 3mm; font-size: 9.5pt; margin-top: 1mm; align-items: center; }
+    .record b { white-space: nowrap; }
+    .o { display: inline-block; width: 5.2mm; height: 5.2mm; border: 1.5px solid var(--ink); border-radius: 50%; text-align: center; line-height: 4.6mm; font-size: 8pt; margin-right: .6mm; }
+    .fill { display: inline-block; border-bottom: 1.4px solid var(--ink); min-width: 30mm; height: 4.6mm; vertical-align: bottom; }
+    .qr { text-align: center; }
+    .qr-img { width: 21mm; height: 21mm; margin: 0 auto; background: #fff; border-radius: 2mm; padding: 1mm; border: 1px solid var(--line); }
+    .qr-img svg { width: 100%; height: 100%; display: block; }
+    .qr small { display: block; font-weight: 700; font-size: 7.5pt; margin-top: .6mm; }
+    .code-line { font-size: 9pt; font-weight: 700; }
+    .code-line .code { font-family: Consolas, monospace; letter-spacing: 1.5px; color: var(--orange); font-size: 11pt; }
+
+    /* 2쪽: 게임 제작소 */
+    .p2 .title { font-size: 25pt; }
+    .p2 .sec { padding: 2.2mm 4mm; gap: 1.6mm; }
+    .p2 .sec-num { width: 6.5mm; height: 6.5mm; font-size: 12pt; }
+    .p2 .sec-head h2 { font-size: 12.5pt; }
+    .foot { font-size: 10pt !important; padding: 1.2mm 4mm !important; }
+    .bridge { display: grid; grid-template-columns: 1fr auto 1fr; gap: 3mm; align-items: center; background: var(--green-soft); border-radius: 4mm; padding: 2.4mm 4mm; }
+    .bridge .arrow { font-family: "Jua"; font-size: 18pt; color: var(--green); }
+    .bridge h3 { font-size: 10.5pt; color: var(--green); margin-right: 1mm; white-space: nowrap; }
+    .bridge .tags { display: flex; gap: 1mm; flex-wrap: nowrap; align-items: center; }
+    .bridge { padding: 1.8mm 4mm; row-gap: 1mm; }
+    .bridge .tags span { font-family: "Jua"; font-size: 9.5pt; background: #fff; border-radius: 99px; padding: .1mm 2.4mm; border: 1.3px solid var(--green); }
+    .sec { border: 2px solid var(--c); border-radius: 5mm; padding: 2.8mm 4mm; display: grid; gap: 2mm; }
+    .sec.blue { --c: var(--blue); --soft: var(--blue-soft); }
+    .sec.purple { --c: var(--purple); --soft: var(--purple-soft); }
+    .sec.orange { --c: var(--orange); --soft: var(--orange-soft); }
+    .sec.green { --c: var(--green); --soft: var(--green-soft); }
+    .sec-head { display: flex; align-items: center; gap: 2.5mm; }
+    .sec-num { font-family: "Jua"; background: var(--c); color: #fff; width: 7.5mm; height: 7.5mm; border-radius: 2mm; display: grid; place-items: center; font-size: 13pt; }
+    .sec-head h2 { font-size: 13.5pt; }
+    .sec-head p { margin-left: auto; font-size: 8.8pt; color: var(--muted); }
+    .pick { display: grid; grid-template-columns: 1fr 1fr; gap: 1mm 4mm; font-size: 9.5pt; }
+    .pick.three { grid-template-columns: repeat(3, 1fr); gap: 1.2mm 3mm; line-height: 1.25; }
+    .pick.inline { display: inline-flex; gap: 3mm; }
+    .ex span[class^="s"] { font-weight: 700; border-bottom: 2px solid currentColor; background: none; }
+    .pick label { display: flex; gap: 1.4mm; align-items: baseline; }
+    .pick i { flex: none; width: 3.6mm; height: 3.6mm; border: 1.5px solid var(--ink); border-radius: 1mm; display: inline-block; transform: translateY(.5mm); }
+    .pick b { white-space: nowrap; }
+    .topic { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+    .topic .box { background: var(--soft); border-radius: 3mm; padding: 2mm 3mm; font-size: 9.5pt; }
+    .topic .box b { color: var(--c); }
+    table.design { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 9.3pt; border: 1.5px solid var(--c); border-radius: 3mm; overflow: hidden; }
+    table.design th, table.design td { padding: 1.5mm 2.5mm; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+    table.design tr:last-child td { border-bottom: 0; }
+    table.design th { background: var(--soft); color: var(--c); font-weight: 900; }
+    table.design td:first-child { font-weight: 900; white-space: nowrap; width: 22mm; }
+    table.design td.app { background: #fafbfd; width: 62mm; color: var(--muted); font-size: 8.8pt; }
+    table.design td.mine { background: #fff; height: 7.6mm; }
+    .formula-row { display: grid; gap: 2mm; }
+    .formula { background: #fff; border: 1.5px dashed var(--c); border-radius: 3mm; padding: 1.8mm 3mm; font-size: 10pt; line-height: 1.85; }
+    .formula h3 { display: inline; margin-right: 2mm; }
+    .examples { grid-template-columns: 1fr 1fr; }
+    .examples h3 { grid-column: 1 / -1; }
+    .formula h3 { font-size: 10.5pt; color: var(--c); margin-bottom: .6mm; }
+    .slot { font-weight: 900; padding: 0 .6mm; border-radius: 1mm; }
+    .s1 { color: #1d5fb5; background: #e2eefd; } .s2 { color: #7c4dde; background: #efe8fe; } .s3 { color: #c2410c; background: #ffedd5; }
+    .s4 { color: #2e7d4f; background: #e3f5ea; } .s5 { color: #b42318; background: #fde4e4; } .s6 { color: #8a6100; background: #fff4c7; }
+    .examples { background: var(--soft); border-radius: 3mm; padding: 2.2mm 3mm; font-size: 8.8pt; display: grid; gap: 1.6mm; }
+    .examples h3 { font-size: 10.5pt; color: var(--c); }
+    .ex { background: #fff; border-radius: 2.5mm; padding: 1.6mm 2.4mm; line-height: 1.55; }
+    .ex small { display: block; font-weight: 900; color: var(--c); font-size: 8pt; }
+    .final { display: grid; gap: 1.3mm; font-size: 10pt; }
+    .final .fl { display: flex; align-items: flex-end; gap: 1.5mm; white-space: nowrap; }
+    .final .fl .b { flex: 1; border-bottom: 1.4px solid var(--ink); height: 6.2mm; }
+    .final .fl .b.w30 { flex: 0 0 30mm; } .final .fl .b.w40 { flex: 0 0 40mm; } .final .fl .b.w50 { flex: 0 0 50mm; }
+    .final .ic { width: 6mm; text-align: center; }
+    .polish { display: grid; grid-template-columns: 1fr 1.15fr; gap: 3mm; align-items: start; }
+    .polish .checks { font-size: 9.2pt; }
+    .fix { font-size: 9.6pt; display: grid; gap: 1.2mm; }
+    .fix .fl { display: flex; align-items: flex-end; gap: 1.2mm; white-space: nowrap; }
+    .fix .fl .b { flex: 1; border-bottom: 1.4px solid var(--ink); height: 6mm; }
+    .polish-row { border-top: 1px dashed var(--line); padding-top: 1.4mm; font-size: 8.8pt; gap: 1mm 1.3mm; flex-wrap: nowrap; white-space: nowrap; }
+    .polish-row .chk { padding: 0 1.8mm 0 1mm; }
+    .p2 .topic .box { padding: 1.4mm 3mm; white-space: nowrap; }
+    .p2 .title { font-size: 23pt !important; }
+    table.design td.mine { height: 6.9mm !important; }
+    .ex { font-size: 8.6pt; }
+    .page.p2 { gap: 2mm; }
+    .p2 .formula { line-height: 1.65; }
+    .p2 .final { gap: .9mm; }
+    .p2 .examples { padding: 1.8mm 3mm; gap: 1.4mm 2.4mm; }
+    .polish-row .step-label { font-size: 9.5pt; margin-right: 1mm; }
+    .foot { margin-top: auto; text-align: center; font-family: "Jua"; font-size: 11pt; color: #fff; background: var(--blue); border-radius: 99px; padding: 1.6mm 4mm; }
+    .credit { position: absolute; bottom: 2mm; left: 0; right: 0; text-align: center; font-size: 7pt; color: #9aa1af; }
+
+    .toolbar { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; justify-content: center; padding: 10px; background: rgba(31,36,48,.85); }
+    .toolbar button, .toolbar input { font: inherit; border-radius: 99px; border: 0; padding: 8px 16px; }
+    .toolbar button { background: var(--orange); color: #fff; font-weight: 700; cursor: pointer; }
+    .toolbar label { color: #fff; display: flex; gap: 6px; align-items: center; }
+    .toolbar input { width: 110px; text-transform: uppercase; letter-spacing: 2px; }
+  </style>
+</head>
+<body>
+  <div class="toolbar no-print">
+    <label>학급 코드 <input id="codeInput" maxlength="8" placeholder="(선택)"></label>
+    <button type="button" id="applyCode">QR에 넣기</button>
+    <button type="button" onclick="print()">인쇄 / PDF로 저장</button>
+  </div>
+
+  <!-- ═════════════ 1쪽: 관찰하고 묘사하기 ═════════════ -->
+  <section class="page p1">
+    <div class="head">
+      <div class="title-box">
+        <span class="eyebrow">6학년 · 이미지 프롬프트 연습</span>
+        <h1 class="title">보이는 걸 <em>말해 봐</em></h1>
+        <p class="subtitle">그림을 자세히 보고, AI가 똑같이 그릴 수 있게 설명해요!</p>
+      </div>
+      <div class="who">
+        <div class="row"><span>6학년</span><span class="blank short"></span><span>반</span><span class="blank short"></span><span>번</span></div>
+        <div class="row"><span>이름</span><span class="blank"></span></div>
+        <div class="row"><span>별명</span><span class="blank"></span></div>
+        <p class="tiny muted" style="margin-top:-1mm">별명은 웹앱에 들어갈 때 써요.</p>
+      </div>
+    </div>
+
+    <div class="def">
+      <div>
+        <p><b>프롬프트</b>는 AI에게 원하는 일을 알려 주는 말이나 글이에요. 그림을 부탁할 때는 다섯 가지를 담아요.</p>
+        <div class="five"><span>대상</span><span>색</span><span>개수</span><span>위치</span><span>배경</span></div>
+      </div>
+      <div class="ba">
+        <span class="small muted">✏️ 이렇게 바꿔 볼까요?</span>
+        <span class="before">“강아지 그려 줘.”</span>
+        <span class="after">→ “초록 잔디 위에 앉아 있는 갈색 강아지 한 마리를 그려 줘.”</span>
+        <span class="small">더해진 것에 밑줄을 그어 보세요. 몇 가지가 더해졌나요? ( &nbsp;&nbsp; )가지</span>
+      </div>
+    </div>
+
+    <!-- 미션 1: 웹앱 중간 3단계 '장면과 날씨' -->
+    <article class="mission blue">
+      <div class="m-head"><span class="m-num">미션 1</span><h2 class="m-title jua">노을 속 장면을 말해요</h2><span class="m-tag">웹앱 중간 3단계 · 장면과 날씨</span></div>
+      <div class="m-body">
+        <img class="m-img" src="assets/photos/m3a.webp" onerror="this.onerror=null;this.src='assets/svg/m3a.svg'" alt="노을 지는 바다 위의 돛단배 그림">
+        <div>
+          <div class="observe">
+            <h3>🔎 이렇게 관찰해요</h3>
+            <ul>
+              <li>주인공은 무엇이고, 무엇을 하고 있나요?</li>
+              <li>주인공이 있는 곳(배경)은 어디인가요?</li>
+              <li>하늘 색을 보면 하루 중 언제쯤일까요?</li>
+            </ul>
+          </div>
+          <p class="helper"><b>문장 도움</b> “<u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u> 하늘 아래, <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u> 위를 <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>이/가 <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>고 있어요.”</p>
+        </div>
+      </div>
+      <div class="write3">
+        <div><div class="step-label"><span class="dot">1</span>처음 쓴 프롬프트 <small>떠오르는 대로</small></div><div class="lines"><i></i><i></i><i></i></div></div>
+        <div class="vchecks"><div class="step-label"><span class="dot">2</span>스스로 점검</div>
+          <span class="chk key"><i></i>대상</span><span class="chk"><i></i>배경</span><span class="chk"><i></i>행동</span><span class="chk"><i></i>빛·시간</span><span class="chk"><i></i>색</span>
+          <span class="score">찾은 표현 <u></u>/5</span></div>
+        <div><div class="step-label"><span class="dot">3</span>고쳐 쓴 프롬프트 <small>빠진 표현 더하기</small></div><div class="lines"><i></i><i></i><i></i></div></div>
+      </div>
+    </article>
+
+    <!-- 미션 2: 웹앱 어려움 2단계 '정확한 배열' -->
+    <article class="mission purple">
+      <div class="m-head"><span class="m-num">미션 2</span><h2 class="m-title jua">정확하게 세고, 자리를 말해요</h2><span class="m-tag">웹앱 어려움 2단계 · 정확한 배열</span></div>
+      <div class="m-body">
+        <img class="m-img" src="assets/photos/h2a.webp" onerror="this.onerror=null;this.src='assets/svg/h2a.svg'" alt="앞줄과 뒷줄에 놓인 상자 그림">
+        <div>
+          <div class="observe">
+            <h3>🔎 이렇게 관찰해요</h3>
+            <ul>
+              <li>모두 몇 개인가요? 몇 줄로 놓여 있나요?</li>
+              <li>앞줄과 뒷줄에는 각각 무엇이 있나요?</li>
+              <li>앞에 있는 것과 뒤에 있는 것의 크기·색을 비교해요.</li>
+            </ul>
+          </div>
+          <p class="helper"><b>문장 도움</b> “<u>&nbsp;&nbsp;&nbsp;&nbsp;</u>개가 <u>&nbsp;&nbsp;&nbsp;&nbsp;</u>줄로 있어요. 앞줄에는 <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>, 뒷줄에는 <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>이/가 있어요.”</p>
+        </div>
+      </div>
+      <div class="write3">
+        <div><div class="step-label"><span class="dot">1</span>처음 쓴 프롬프트</div><div class="lines"><i></i><i></i><i></i></div></div>
+        <div class="vchecks"><div class="step-label"><span class="dot">2</span>스스로 점검</div>
+          <span class="chk key"><i></i>대상</span><span class="chk"><i></i>전체 개수</span><span class="chk"><i></i>줄 수</span><span class="chk"><i></i>앞과 뒤</span><span class="chk"><i></i>크기 비교</span><span class="chk"><i></i>색</span>
+          <span class="score">찾은 표현 <u></u>/6</span></div>
+        <div><div class="step-label"><span class="dot">3</span>고쳐 쓴 프롬프트</div><div class="lines"><i></i><i></i><i></i></div></div>
+      </div>
+    </article>
+
+    <div class="app-strip">
+      <div>
+        <h2>📱 이제 웹앱에서 도전! <span class="small muted" style="font-family:'Noto Sans KR'">대상 표현은 꼭, 핵심 표현 80% 이상이면 다음 단계로!</span></h2>
+        <div class="record">
+          <b>도전한 난이도</b><span><span class="o"></span>쉬움 &nbsp; <span class="o"></span>중간 &nbsp; <span class="o"></span>어려움 &nbsp;&nbsp; <b>통과한 단계</b> &nbsp;<span class="o">1</span><span class="o">2</span><span class="o">3</span><span class="o">4</span></span>
+          <b>자주 놓친 표현</b><span><span class="fill" style="min-width:34mm"></span> &nbsp;→ 다음에는 이 표현을 꼭 넣어 쓸래요!</span>
+        </div>
+      </div>
+      <div class="qr">
+        <div class="qr-img" id="qr1"></div>
+        <small class="code-line">학급 코드 <span class="code" id="code1">______</span></small>
+      </div>
+    </div>
+    <p class="credit">보이는 걸 말해 봐 · 한국어 이미지 프롬프트 연습 웹앱 기반 활동지</p>
+  </section>
+
+  <!-- ═════════════ 2쪽: 바이브코딩 교육용 게임 제작소 ═════════════ -->
+  <section class="page p2">
+    <div class="head">
+      <div class="title-box">
+        <span class="eyebrow" style="background:var(--blue)">바이브코딩과 함께하는</span>
+        <h1 class="title">교육용 게임 <em>주문서</em> 🎮</h1>
+        <p class="subtitle" style="color:var(--purple)">그림처럼 게임도, 자세히 말할수록 AI가 원하는 대로 만들어요!</p>
+      </div>
+      <div class="who">
+        <div class="row"><span>6학년</span><span class="blank short"></span><span>반</span><span class="blank short"></span><span>번</span></div>
+        <div class="row"><span>이름</span><span class="blank"></span></div>
+        <div class="row"><span>게임 이름</span><span class="blank"></span></div>
+      </div>
+    </div>
+
+    <div class="bridge">
+      <div class="tags"><h3>앞장 · 그림 주문</h3><span>대상</span><span>색</span><span>개수</span><span>위치</span><span>배경</span></div>
+      <span class="arrow">➜</span>
+      <div class="tags"><h3>뒷장 · 게임 주문</h3><span>누가</span><span>무엇을</span><span>어떻게</span><span>규칙</span><span>모습</span></div>
+    </div>
+
+    <section class="sec blue">
+      <div class="sec-head"><span class="sec-num">1</span><h2 class="jua">어떤 게임을 만들까요?</h2><p>주제를 쓰고, 게임 방식을 하나 골라 ✔ 해요.</p></div>
+      <div class="topic">
+        <div class="box"><b>누가?</b> &nbsp;<span class="pick inline"><label><i></i>우리 반 친구들</label><label><i></i>저학년 동생들</label><label><i></i><span class="fill" style="min-width:16mm"></span></label></span></div>
+        <div class="box"><b>배울 내용</b> <span class="fill" style="min-width:36mm"></span> <span class="muted tiny">예: 과학-태양계</span></div>
+      </div>
+      <div class="pick three">
+        <label><i></i><span><b>보고 설명하기</b> <span class="muted tiny">(이 웹앱처럼)</span></span></label>
+        <label><i></i><span><b>퀴즈</b> <span class="muted tiny">맞히면 다음 문제로</span></span></label>
+        <label><i></i><span><b>짝 맞추기</b> <span class="muted tiny">낱말과 뜻 카드</span></span></label>
+        <label><i></i><span><b>순서 맞추기</b> <span class="muted tiny">사건·과정 순서</span></span></label>
+        <label><i></i><span><b>분류하기</b> <span class="muted tiny">알맞은 바구니로</span></span></label>
+        <label><i></i><span><b>기타</b> <span class="fill" style="min-width:30mm"></span></span></label>
+      </div>
+    </section>
+
+    <section class="sec purple">
+      <div class="sec-head"><span class="sec-num">2</span><h2 class="jua">게임 규칙 설계하기</h2><p>‘보이는 걸 말해 봐’를 분석하고, 내 게임 규칙을 정해요.</p></div>
+      <table class="design">
+        <tr><th>규칙</th><th>보이는 걸 말해 봐는?</th><th>내 게임은?</th></tr>
+        <tr><td>🪜 레벨업</td><td class="app">쉬움·중간·어려움, 난이도마다 4단계</td><td class="mine"></td></tr>
+        <tr><td>✅ 통과 조건</td><td class="app">대상 표현은 꼭 + 핵심 표현 80% 이상</td><td class="mine"></td></tr>
+        <tr><td>💬 틀렸을 때</td><td class="app">찾은 표현 ✓, 빠진 표현은 힌트로 안내</td><td class="mine"></td></tr>
+        <tr><td>🎨 화면 모습</td><td class="app">밝은 색, 그림은 왼쪽 · 글쓰기 칸은 오른쪽</td><td class="mine"></td></tr>
+      </table>
+    </section>
+
+    <section class="sec orange">
+      <div class="sec-head"><span class="sec-num">3</span><h2 class="jua">바이브코딩 프롬프트 공식</h2><p>공식의 빈칸에 1·2번에서 정한 내용을 넣어요.</p></div>
+      <div class="formula-row">
+        <div class="formula">
+          <h3>💡 마법의 공식</h3>
+          “<span class="slot s1">[누가]</span>이/가 <span class="slot s2">[배울 내용]</span>을/를 배우는
+          <span class="slot s3">[게임 방식]</span> 게임을 만들어 줘.
+          단계는 <span class="slot s4">[레벨업 규칙]</span>(이)야.
+          <span class="slot s5">[통과 조건]</span>이면 다음 단계로 넘어가.
+          틀리면 <span class="slot s5">[피드백·힌트]</span>을/를 보여 줘.
+          화면은 <span class="slot s6">[분위기·디자인]</span>(으)로 해 줘.”
+        </div>
+        <div class="examples">
+          <h3>✨ 이렇게 써 봤어요</h3>
+          <div class="ex"><small>예시 ① 보이는 걸 말해 봐</small>“<span class="s1">초등학생</span>이 <span class="s2">그림을 자세히 설명하는 법</span>을 배우는 <span class="s3">보고 설명하기</span> 게임을 만들어 줘. 단계는 <span class="s4">쉬움·중간·어려움에 각각 4단계</span>야. <span class="s5">대상·색·위치 같은 핵심 표현이 80% 이상</span>이면 다음 단계로 넘어가. 틀리면 <span class="s5">빠진 표현을 알려 주는 힌트</span>를 보여 줘. 화면은 <span class="s6">밝은 파스텔색</span>으로 해 줘.”</div>
+          <div class="ex"><small>예시 ② 과학 퀴즈</small>“<span class="s1">3학년 동생들</span>이 <span class="s2">태양계 행성</span>을 배우는 <span class="s3">퀴즈</span> 게임을 만들어 줘. 단계는 <span class="s4">수성부터 해왕성까지 행성 8개</span>야. <span class="s5">3문제 중 2문제를 맞히면</span> 다음 단계로 넘어가. 틀리면 <span class="s5">그 행성의 특징 한 줄</span>을 보여 줘. 화면은 <span class="s6">별이 반짝이는 우주 분위기</span>로 해 줘.”</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec green">
+      <div class="sec-head"><span class="sec-num">4</span><h2 class="jua">내 게임 주문서 완성하기</h2><p>빈칸을 채워 AI 코딩 도구에 넣을 최종 프롬프트를 써요.</p></div>
+      <div class="final">
+        <div class="fl"><span class="ic">🙋</span>“<span class="b w40"></span>이/가 <span class="b"></span>을/를 배우는 <span class="b w40"></span>게임을 만들어 줘.</div>
+        <div class="fl"><span class="ic">🪜</span>단계는 <span class="b"></span>(이)야.</div>
+        <div class="fl"><span class="ic">✅</span><span class="b"></span>이면 다음 단계로 넘어가.</div>
+        <div class="fl"><span class="ic">💬</span>틀리면 <span class="b"></span>을/를 보여 줘.</div>
+        <div class="fl"><span class="ic">🎨</span>화면은 <span class="b"></span>(으)로 해 줘.”</div>
+      </div>
+      <div class="checks polish-row">
+        <span class="step-label"><span class="dot" style="background:var(--green)">✓</span>점검</span>
+        <span class="chk key"><i></i>누가</span><span class="chk key"><i></i>무엇을</span><span class="chk"><i></i>게임 방식</span><span class="chk"><i></i>단계</span><span class="chk"><i></i>통과 조건</span><span class="chk"><i></i>틀렸을 때</span><span class="chk"><i></i>화면</span>
+        <span class="score">찾은 것 <u></u>/7</span>
+      </div>
+      <div class="fix">
+        <div class="fl"><b>🔧 해 보고 고치기</b> &nbsp;“<span class="b"></span>을/를 <span class="b"></span>(으)로 바꿔 줘.”</div>
+      </div>
+    </section>
+
+    <div class="foot">🏆 완성! 주문서를 AI 코딩 도구에 넣고, 친구와 서로의 게임을 해 보며 고쳐 봐요!</div>
+    <p class="credit">보이는 걸 말해 봐 · 한국어 이미지 프롬프트 연습 웹앱 기반 활동지</p>
+  </section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script>
+    // 학생 웹앱 주소 QR (worksheet.html?code=AB12CD 로 열면 학급 코드가 들어간 QR이 돼요)
+    (function () {
+      // 인쇄물은 어디서 만들든 실제 학생 주소로 연결돼야 해요 (다른 곳에 올린 경우만 그 주소 사용)
+      const DEFAULT_URL = 'https://keyssaem.github.io/prompt/';
+      const local = location.protocol === 'file:' || /^(localhost|127\.|\[::1\])/.test(location.hostname);
+      const APP_URL = local ? DEFAULT_URL : new URL('./', location.href).href;
+      const params = new URLSearchParams(location.search);
+      const clean = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+      function draw(code) {
+        const url = new URL(APP_URL);
+        if (code) url.searchParams.set('code', code);
+        document.getElementById('code1').textContent = code || '______';
+        if (!window.qrcode) return;
+        const q = qrcode(0, 'M'); q.addData(url.href); q.make();
+        document.getElementById('qr1').innerHTML = q.createSvgTag({ cellSize: 4, margin: 1, scalable: true, alt: '웹앱 QR 코드' });
+      }
+      const input = document.getElementById('codeInput');
+      input.value = clean(params.get('code'));
+      document.getElementById('applyCode').onclick = () => {
+        const c = clean(input.value); const u = new URL(location.href);
+        c ? u.searchParams.set('code', c) : u.searchParams.delete('code');
+        history.replaceState(null, '', u); draw(c);
+      };
+      draw(clean(params.get('code')));
+    })();
+  </script>
+</body>
+</html>
