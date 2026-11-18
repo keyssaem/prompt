@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>교사 화면 · 보이는 걸 말해 봐</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/teacher.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="teacher.html"><span aria-hidden="true">🧑‍🏫</span> 교사 화면</a>
+    <div class="top-actions">
+      <span class="who" id="teacherName" hidden></span>
+      <button class="text-button" id="signOut" type="button" hidden>로그아웃</button>
+    </div>
+  </header>
+  <main id="t-app" class="wrap"><p class="loading">불러오는 중…</p></main>
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/teacher.js"></script>
+</body>
+</html>

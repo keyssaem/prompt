@@ -1,0 +1,41 @@
+rules_version = '2';
+// 보이는 걸 말해 봐 — Firestore 보안 규칙
+// - 학생(익명 로그인): 자기 상태 문서만 쓰고, 시도 기록은 "추가"만 할 수 있어요. 다른 학생 기록은 못 봐요.
+// - 교사(Google 로그인): 자기가 만든 학급의 모든 기록을 읽고 지울 수 있어요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isTeacher() { return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
+    function classDoc(code) { return get(/databases/$(database)/documents/classes/$(code)); }
+    function ownsClass(code) { return isTeacher() && classDoc(code).data.teacherUid == request.auth.uid; }
+    function classOpen(code) { return exists(/databases/$(database)/documents/classes/$(code)) && classDoc(code).data.open != false; }
+
+    match /classes/{code} {
+      allow get: if signedIn();
+      allow list: if isTeacher() && resource.data.teacherUid == request.auth.uid;
+      allow create: if isTeacher() && request.resource.data.teacherUid == request.auth.uid;
+      allow update: if isTeacher() && resource.data.teacherUid == request.auth.uid
+                    && request.resource.data.teacherUid == request.auth.uid;
+      allow delete: if isTeacher() && resource.data.teacherUid == request.auth.uid;
+
+      match /students/{sid} {
+        allow read: if (signedIn() && request.auth.uid == sid) || ownsClass(code);
+        allow create: if signedIn() && request.auth.uid == sid && classOpen(code)
+                      && request.resource.data.uid == sid;
+        allow update: if signedIn() && request.auth.uid == sid
+                      && request.resource.data.uid == sid
+                      && request.resource.data.get('currentDraft', '').size() <= 1000;
+        allow delete: if ownsClass(code);
+      }
+
+      match /attempts/{aid} {
+        allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+                      && request.resource.data.classCode == code
+                      && request.resource.data.prompt is string
+                      && request.resource.data.prompt.size() <= 1000
+                      && exists(/databases/$(database)/documents/classes/$(code)/students/$(request.auth.uid));
+        allow read, delete: if ownsClass(code);
+      }
+    }
+  }
+}
